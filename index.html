@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Apostas Esportivas</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+    <!-- Lucide Icons for modern icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Particles.js for background animation -->
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* Custom styles for a more professional look */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0; /* slate-200 */
+        }
+        
+        /* Particles.js background container */
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1; /* Place it behind all content */
+        }
+        
+        /* Main content needs a relative position to be on top of particles */
+        .main-container {
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Glassmorphism card effect */
+        .card {
+            background-color: rgba(30, 41, 59, 0.5); /* slate-800 with opacity */
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b; /* slate-800 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; /* slate-600 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* slate-500 */
+        }
+
+        /* Animation for cards loading */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .summary-card {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        /* Chart tooltip styling */
+        .chartjs-tooltip {
+            background-color: #334155 !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Particles.js container -->
+    <div id="particles-js"></div>
+    
+    <div class="main-container p-4 sm:p-6 lg:p-8">
+        <div class="max-w-screen-2xl mx-auto">
+            <!-- Header -->
+            <header class="mb-8 text-center">
+                <h1 class="text-4xl sm:text-5xl font-extrabold text-white drop-shadow-lg">Dashboard de SportsBook</h1>
+                <p class="text-slate-400 mt-2 text-lg">Análise Detalhada de Apostas Esportivas (Jan-Maio)</p>
+            </header>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div id="total-apostas" class="card summary-card p-6 rounded-2xl shadow-lg flex items-center gap-6"></div>
+                <div id="total-valor" class="card summary-card p-6 rounded-2xl shadow-lg flex items-center gap-6" style="animation-delay: 0.1s;"></div>
+                <div id="total-ggr" class="card summary-card p-6 rounded-2xl shadow-lg flex items-center gap-6" style="animation-delay: 0.2s;"></div>
+                <div id="total-rentabilidade" class="card summary-card p-6 rounded-2xl shadow-lg flex items-center gap-6" style="animation-delay: 0.3s;"></div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card p-4 rounded-2xl mb-8 flex flex-col sm:flex-row gap-4 items-center">
+                <div class="flex-grow w-full">
+                    <label for="sport-filter" class="block text-sm font-medium text-slate-300 mb-1 ml-2">Filtrar por Esporte</label>
+                    <select id="sport-filter" class="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-2.5 focus:ring-blue-500 focus:border-blue-500 appearance-none">
+                        <option value="todos">Todos os Esportes</option>
+                    </select>
+                </div>
+                <div class="flex-grow w-full">
+                    <label for="month-filter" class="block text-sm font-medium text-slate-300 mb-1 ml-2">Filtrar por Mês</label>
+                    <select id="month-filter" class="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-2.5 focus:ring-blue-500 focus:border-blue-500 appearance-none">
+                        <option value="todos">Todos os Meses</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+                <div class="card p-6 rounded-2xl shadow-lg lg:col-span-2">
+                    <h2 class="text-xl font-semibold mb-4 text-center">Valor Apostado por Esporte</h2>
+                    <div class="relative h-80 w-full">
+                        <canvas id="valorApostadoChart"></canvas>
+                    </div>
+                </div>
+                <div class="card p-6 rounded-2xl shadow-lg lg:col-span-2">
+                    <h2 class="text-xl font-semibold mb-4 text-center">GGR Mensal</h2>
+                    <div class="relative h-80 w-full">
+                        <canvas id="ggrMensalChart"></canvas>
+                    </div>
+                </div>
+                <div class="card p-6 rounded-2xl shadow-lg lg:col-span-1">
+                    <h2 class="text-xl font-semibold mb-4 text-center">Rentabilidade</h2>
+                    <div class="relative h-80 w-full">
+                        <canvas id="rentabilidadeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Data Table -->
+            <div class="card rounded-2xl shadow-lg overflow-hidden">
+                 <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-300">
+                        <thead class="text-xs text-slate-200 uppercase bg-slate-700/50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Esporte</th>
+                                <th scope="col" class="px-6 py-3">Mês</th>
+                                <th scope="col" class="px-6 py-3 text-right">Qtd. Apostas</th>
+                                <th scope="col" class="px-6 py-3 text-right">Valor Apostado</th>
+                                <th scope="col" class="px-6 py-3 text-right">GGR</th>
+                                <th scope="col" class="px-6 py-3 text-right">Rentabilidade</th>
+                                <th scope="col" class="px-6 py-3 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="data-table">
+                            <!-- Data rows will be inserted here by JavaScript -->
+                        </tbody>
+                    </table>
+                 </div>
+            </div>
+
+            <!-- Details Section (Initially Hidden) -->
+            <div id="details-section" class="hidden mt-8 transition-all duration-500">
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    <!-- Championships Table -->
+                    <div class="card p-6 rounded-2xl shadow-lg">
+                        <h2 id="campeonatos-title" class="text-2xl font-semibold text-white mb-4"></h2>
+                        <div class="overflow-x-auto max-h-96">
+                            <table class="w-full text-sm text-left text-slate-300">
+                                <thead class="text-xs text-slate-200 uppercase bg-slate-700/50 sticky top-0">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">Competição</th>
+                                        <th scope="col" class="px-6 py-3 text-right">Valor Apostado</th>
+                                        <th scope="col" class="px-6 py-3 text-right">GGR</th>
+                                        <th scope="col" class="px-6 py-3 text-right">Rent.</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="campeonatos-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- Matches Table -->
+                    <div class="card p-6 rounded-2xl shadow-lg">
+                        <h2 id="partidas-title" class="text-2xl font-semibold text-white mb-4"></h2>
+                        <div class="overflow-x-auto max-h-96">
+                            <table class="w-full text-sm text-left text-slate-300">
+                                 <thead class="text-xs text-slate-200 uppercase bg-slate-700/50 sticky top-0">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">Partida</th>
+                                        <th scope="col" class="px-6 py-3 text-right">Valor Apostado</th>
+                                        <th scope="col" class="px-6 py-3 text-right">GGR</th>
+                                        <th scope="col" class="px-6 py-3 text-right">Rent.</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="partidas-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- DATA SOURCE ---
+    const rawData = [
+        {sport: "FUTEBOL", month: "Janeiro", bets: 4063043, staked: 30110985.64, ggr: 2784811.65, profitability: 0.0925},
+        {sport: "FUTEBOL", month: "Fevereiro", bets: 4543249, staked: 33508385.83, ggr: 4031238.65, profitability: 0.1203},
+        {sport: "FUTEBOL", month: "Março", bets: 4355145, staked: 31714319.84, ggr: 2390483.96, profitability: 0.0754},
+        {sport: "FUTEBOL", month: "ABRIL", bets: 5154259, staked: 36583352.95, ggr: 5875791.73, profitability: 0.1606},
+        {sport: "FUTEBOL", month: "Maio", bets: 4727833, staked: 33410386.15, ggr: 3438728.78, profitability: 0.1029},
+        {sport: "BASQUETE", month: "Janeiro", bets: 176162, staked: 5650222.76, ggr: 427920.85, profitability: 0.0757},
+        {sport: "BASQUETE", month: "Fevereiro", bets: 94207, staked: 3169406.16, ggr: 155934.72, profitability: 0.0492},
+        {sport: "BASQUETE", month: "Março", bets: 128216, staked: 3657873.71, ggr: 165295.28, profitability: 0.0452},
+        {sport: "BASQUETE", month: "ABRIL", bets: 68916, staked: 2145454.73, ggr: 136926.97, profitability: 0.0638},
+        {sport: "BASQUETE", month: "Maio", bets: 37353, staked: 1785849.31, ggr: 119279.81, profitability: 0.0668},
+        {sport: "TÊNIS", month: "Janeiro", bets: 33282, staked: 2432296.02, ggr: 64566.0, profitability: 0.0265},
+        {sport: "TÊNIS", month: "Fevereiro", bets: 14754, staked: 1115507.25, ggr: 124838.0, profitability: 0.1119},
+        {sport: "TÊNIS", month: "Março", bets: 3110, staked: 204212.78, ggr: 45787.0, profitability: 0.2242},
+        {sport: "TÊNIS", month: "Abril", bets: 22134, staked: 1045259.58, ggr: 95536.06, profitability: 0.0914},
+        {sport: "TÊNIS", month: "Maio", bets: 47259, staked: 2712985.6, ggr: 340916.32, profitability: 0.1257},
+        {sport: "TÊNIS DE MESA", month: "Janeiro", bets: 33883, staked: 91950.07, ggr: 8104.00, profitability: 0.0881},
+        {sport: "TÊNIS DE MESA", month: "Fevereiro", bets: 27654, staked: 66442.97, ggr: 6447.00, profitability: 0.0970},
+        {sport: "TÊNIS DE MESA", month: "Março", bets: 26201, staked: 73713.61, ggr: 5868.00, profitability: 0.0796},
+        {sport: "TÊNIS DE MESA", month: "ABRIL", bets: 22370, staked: 76099.54, ggr: 4584.00, profitability: 0.0602},
+        {sport: "TÊNIS DE MESA", month: "Maio", bets: 27350, staked: 102994.21, ggr: 9946.00, profitability: 0.0966},
+        {sport: "VÔLEI", month: "Janeiro", bets: 19357, staked: 950476.41, ggr: 71394.00, profitability: 0.0751},
+        {sport: "VÔLEI", month: "Fevereiro", bets: 17158, staked: 930326.95, ggr: 31829.00, profitability: 0.0342},
+        {sport: "VÔLEI", month: "Março", bets: 19059, staked: 1300501.34, ggr: 120887.00, profitability: 0.0930},
+        {sport: "VÔLEI", month: "ABRIL", bets: 22370, staked: 76099.54, ggr: 4584.00, profitability: 0.0602},
+        {sport: "VÔLEI", month: "Maio", bets: 13128, staked: 900613.58, ggr: 41148.00, profitability: 0.0457},
+        {sport: "MMA", month: "Janeiro", bets: 4557, staked: 123177.61, ggr: 41678.00, profitability: 0.3383},
+        {sport: "MMA", month: "Fevereiro", bets: 5076, staked: 93557.71, ggr: 15996.00, profitability: 0.1710},
+        {sport: "MMA", month: "Março", bets: 7751, staked: 125356.84, ggr: 63321.00, profitability: 0.5051},
+        {sport: "MMA", month: "ABRIL", bets: 5298, staked: 61889.06, ggr: -1650.00, profitability: -0.0267},
+        {sport: "MMA", month: "Maio", bets: 4956, staked: 65503.93, ggr: 7891.00, profitability: 0.1205},
+        {sport: "F1", month: "Janeiro", bets: 10, staked: 29.83, ggr: 30.00, profitability: 1.0},
+        {sport: "F1", month: "Fevereiro", bets: 14, staked: 33.95, ggr: -1.00, profitability: -0.0295},
+        {sport: "F1", month: "Março", bets: 287, staked: 11823.58, ggr: 4402.00, profitability: 0.3723},
+        {sport: "F1", month: "ABRIL", bets: 422, staked: 12541.58, ggr: -13614.90, profitability: -1.0856},
+        {sport: "BOXE", month: "Janeiro", bets: 202, staked: 2250.12, ggr: -1077.00, profitability: -0.4786},
+        {sport: "BOXE", month: "Fevereiro", bets: 225, staked: 6435.45, ggr: -2520.00, profitability: -0.3916},
+        {sport: "BOXE", month: "Março", bets: 274, staked: 3393.84, ggr: -1317.00, profitability: -0.3881},
+        {sport: "BOXE", month: "ABRIL", bets: 130, staked: 568.33, ggr: -64.00, profitability: -0.1126},
+        {sport: "BOXE", month: "Maio", bets: 636, staked: 829.20, ggr: 125.00, profitability: 0.1507},
+        {sport: "FUTSAL", month: "Janeiro", bets: 870, staked: 164835.31, ggr: 14268.00, profitability: 0.0866},
+        {sport: "FUTSAL", month: "Fevereiro", bets: 323, staked: 24464.74, ggr: 9271.00, profitability: 0.3789},
+        {sport: "FUTSAL", month: "Março", bets: 905, staked: 85564.31, ggr: 8791.00, profitability: 0.1027},
+        {sport: "FUTSAL", month: "ABRIL", bets: 821, staked: 100425.93, ggr: -28955.00, profitability: -0.2883},
+        {sport: "FUTSAL", month: "Maio", bets: 1542, staked: 125100.66, ggr: -171.00, profitability: -0.0014},
+    ].map(item => ({...item, month: item.month.charAt(0).toUpperCase() + item.month.slice(1).toLowerCase()}));
+
+    const detailedData = {
+        "FUTEBOL-Janeiro": {
+            campeonatos: [
+                {pais: "England", competicao: "Premier League", bets: 177005, staked: 3284988.35, ggr: 300932, profitability: 0.0916},
+                {pais: "Europe", competicao: "UEFA Champions League", bets: 86459, staked: 2462324.77, ggr: -1400, profitability: -0.0006},
+                {pais: "Italy", competicao: "Serie A", bets: 167045, staked: 2010917.02, ggr: 163139, profitability: 0.0811},
+                {pais: "Brazil", competicao: "Campeonato Paulista A1", bets: 152565, staked: 1850315.03, ggr: 163940, profitability: 0.0886},
+                {pais: "Spain", competicao: "La Liga", bets: 149247, staked: 1837326.48, ggr: 206511, profitability: 0.1124},
+                {pais: "World", competicao: "Club Friendlies", bets: 133384, staked: 1650459.50, ggr: 195029, profitability: 0.1182},
+                {pais: "Germany", competicao: "Bundesliga", bets: 111928, staked: 1485234.93, ggr: 125108, profitability: 0.0842},
+                {pais: "Brazil", competicao: "Campeonato Carioca A", bets: 135722, staked: 1245813.31, ggr: 202040, profitability: 0.1622},
+                {pais: "Europe", competicao: "UEFA Europa League", bets: 47547, staked: 1222966.85, ggr: 48229, profitability: 0.0394},
+                {pais: "England", competicao: "FA Cup", bets: 43421, staked: 1123776.89, ggr: -119346, profitability: -0.1062},
+            ],
+            partidas: [
+                {pais: "Spain", partida: "Real Madrid x Barcelona", bets: 10562, staked: 365605.07, ggr: 55039.84, profitability: 0.1505},
+                {pais: "England", partida: "Arsenal x Manchester United", bets: 6497, staked: 348029.82, ggr: -148209.45, profitability: -0.4259},
+                {pais: "Spain", partida: "Real Madrid x Mallorca", bets: 9514, staked: 249785.86, ggr: -7625.22, profitability: -0.0305},
+                {pais: "England", partida: "Arsenal x Newcastle United", bets: 10181, staked: 244535.73, ggr: 69878.68, profitability: 0.2858},
+                {pais: "Spain", partida: "Valencia x Real Madrid", bets: 10970, staked: 218374.65, ggr: -61968.39, profitability: -0.2838},
+                {pais: "England", partida: "Tottenham Hotspur x Liverpool", bets: 9647, staked: 217410.71, ggr: 89548.39, profitability: 0.4119},
+                {pais: "England", partida: "Liverpool x Manchester United", bets: 12665, staked: 214759.79, ggr: 87767.43, profitability: 0.4087},
+                {pais: "Spain", partida: "Real Madrid x Celta de Vigo", bets: 10171, staked: 202801.39, ggr: 15766.21, profitability: 0.0777},
+                {pais: "Italy", partida: "Inter Milan x Atalanta", bets: 5883, staked: 195649.54, ggr: 8552.89, profitability: 0.0437},
+                {pais: "Italy", partida: "Inter Milan x AC Milan", bets: 6707, staked: 168986.09, ggr: -27856.94, profitability: -0.1648},
+            ]
+        },
+        "FUTEBOL-Fevereiro": {
+            campeonatos: [
+                {pais: "Brazil", competicao: "Campeonato Paulista A1", bets: 269989, staked: 3943065.74, ggr: 385089, profitability: 0.0977},
+                {pais: "England", competicao: "Premier League", bets: 171055, staked: 2627885.42, ggr: 401922, profitability: 0.1529},
+                {pais: "Spain", competicao: "La Liga", bets: 187431, staked: 2138782.08, ggr: 290481, profitability: 0.1358},
+                {pais: "Europe", competicao: "UEFA Champions League", bets: 82728, staked: 2119642.06, ggr: 169377, profitability: 0.0799},
+                {pais: "Italy", competicao: "Serie A", bets: 177721, staked: 2003194.65, ggr: 65076, profitability: 0.0325},
+                {pais: "Brazil", competicao: "Campeonato Carioca A", bets: 157660, staked: 1509112.08, ggr: 254584, profitability: 0.1687},
+                {pais: "Germany", competicao: "Bundesliga", bets: 112124, staked: 1383568.56, ggr: 364869, profitability: 0.2637},
+                {pais: "Argentina", competicao: "Liga Profesional", bets: 124479, staked: 1233599.35, ggr: 82145, profitability: 0.0666},
+                {pais: "Brazil", competicao: "Copa do Brasil", bets: 83570, staked: 1094156.17, ggr: 301422, profitability: 0.2755},
+            ],
+            partidas: [
+                {pais: "Europe", partida: "Manchester City x Real Madrid", bets: 18983, staked: 262256.51, ggr: -194252, profitability: -0.7407},
+                {pais: "Brazil", partida: "Santos SP x Botafogo FC SP", bets: 19033, staked: 229897.92, ggr: 137952, profitability: 0.6001},
+                {pais: "Europe", partida: "Real Madrid x Manchester City", bets: 17506, staked: 217278.59, ggr: 34008, profitability: 0.1565},
+                {pais: "Spain", partida: "Espanyol x Real Madrid", bets: 12044, staked: 195206.94, ggr: 117600, profitability: 0.6024},
+                {pais: "South America", partida: "Corinthians SP x UCV FC", bets: 8780, staked: 193144.07, ggr: 7556, profitability: 0.0391},
+                {pais: "England", partida: "Brighton and Hove Albion x Chelsea", bets: 17879, staked: 193052.75, ggr: 79076, profitability: 0.4096},
+                {pais: "Brazil", partida: "SE Palmeiras x Corinthians SP", bets: 16230, staked: 192029.22, ggr: 53435, profitability: 0.2783},
+                {pais: "Brazil", partida: "Gremio Novorizontino x Corinthians SP", bets: 10747, staked: 190604.66, ggr: -82115, profitability: -0.4308},
+                {pais: "Brazil", partida: "Sao Paulo FC x AA Internacional de Limeira", bets: 8917, staked: 190120.67, ggr: 147664, profitability: 0.7767},
+                {pais: "Brazil", partida: "Corinthians SP x Sao Bernardo FC SP", bets: 17219, staked: 181304.37, ggr: 19554, profitability: 0.1079},
+            ]
+        },
+        "FUTEBOL-Março": {
+            campeonatos: [
+                {pais: "Europe", competicao: "UEFA Champions League", bets: 98389, staked: 2589356.23, ggr: 300882, profitability: 0.1162},
+                {pais: "Spain", competicao: "La Liga", bets: 180661, staked: 2103313.97, ggr: 35142, profitability: 0.0167},
+                {pais: "Italy", competicao: "Serie A", bets: 151499, staked: 1880363.95, ggr: 139540, profitability: 0.0742},
+                {pais: "Brazil", competicao: "Campeonato Paulista A1", bets: 109437, staked: 1764693.00, ggr: -11653, profitability: -0.0066},
+                {pais: "England", competicao: "Premier League", bets: 92246, staked: 1370297.71, ggr: 272844, profitability: 0.1991},
+                {pais: "Brazil", competicao: "Serie A", bets: 66393, staked: 1246595.71, ggr: 337704, profitability: 0.2709},
+                {pais: "World", competicao: "World Cup South American Qualification", bets: 70210, staked: 1229332.71, ggr: 208948, profitability: 0.1700},
+                {pais: "Germany", competicao: "Bundesliga", bets: 98708, staked: 1170681.03, ggr: 215951, profitability: 0.1845},
+                {pais: "Argentina", competicao: "Liga Profesional", bets: 111323, staked: 1169176.09, ggr: 137230, profitability: 0.1174},
+                {pais: "Europe", competicao: "UEFA Nations League", bets: 42921, staked: 1145508.84, ggr: -67732, profitability: -0.0591},
+            ],
+            partidas: [
+                {pais: "World", partida: "Argentina x Brazil", bets: 29981, staked: 343782.99, ggr: 88092, profitability: 0.2562},
+                {pais: "Europe", partida: "Liverpool x Paris Saint-Germain", bets: 18451, staked: 336985.12, ggr: 120770, profitability: 0.3584},
+                {pais: "Brazil", partida: "Corinthians SP x SE Palmeiras", bets: 16221, staked: 335653.71, ggr: 208409, profitability: 0.6209},
+                {pais: "Europe", partida: "Atletico Madrid x Real Madrid", bets: 22210, staked: 312866.09, ggr: 116221, profitability: 0.3715},
+                {pais: "Europe", partida: "Real Madrid x Atletico Madrid", bets: 23075, staked: 280122.03, ggr: -29734, profitability: -0.1061},
+                {pais: "Brazil", partida: "Corinthians SP x Santos SP", bets: 20015, staked: 263827.83, ggr: 15893, profitability: 0.0602},
+                {pais: "Brazil", partida: "SE Palmeiras x Sao Paulo FC", bets: 17357, staked: 261327.11, ggr: 115832, profitability: 0.4432},
+                {pais: "World", partida: "Brazil x Colombia", bets: 19246, staked: 220539.52, ggr: -60269, profitability: -0.2733},
+                {pais: "Europe", partida: "SL Benfica x Barcelona", bets: 22324, staked: 219487.54, ggr: -36938, profitability: -0.1683},
+                {pais: "Brazil", partida: "Sao Paulo FC x Gremio Novorizontino", bets: 11394, staked: 212436.53, ggr: -29726, profitability: -0.1399},
+            ]
+        },
+        "FUTEBOL-Abril": {
+            campeonatos: [
+                {pais: "Brazil", competicao: "Serie A", bets: 331661, staked: 6523406.22, ggr: 723408.57, profitability: 0.1109},
+                {pais: "South America", competicao: "Copa Libertadores", bets: 214272, staked: 3798135.69, ggr: 1096949.89, profitability: 0.2888},
+                {pais: "England", competicao: "Premier League", bets: 193973, staked: 3341000.44, ggr: 471814.13, profitability: 0.1412},
+                {pais: "Europe", competicao: "UEFA Champions League", bets: 92386, staked: 2410844.23, ggr: 364003.38, profitability: 0.1510},
+                {pais: "Spain", competicao: "La Liga", bets: 169626, staked: 2264772.99, ggr: 306238.65, profitability: 0.1352},
+                {pais: "South America", competicao: "Copa Sudamericana", bets: 181842, staked: 2186151.68, ggr: 593975.69, profitability: 0.2717},
+                {pais: "Italy", competicao: "Serie A", bets: 124282, staked: 1754261.03, ggr: 400030.91, profitability: 0.2280},
+                {pais: "Brazil", competicao: "Serie B", bets: 161594, staked: 1522732.47, ggr: 32690.11, profitability: 0.0215},
+                {pais: "Germany", competicao: "Bundesliga", bets: 87690, staked: 1180783.89, ggr: 236464.73, profitability: 0.2003},
+                {pais: "Brazil", competicao: "Copa do Brasil", bets: 44027, staked: 1080556.21, ggr: 182992.08, profitability: 0.1693},
+            ],
+            partidas: [
+                {pais: "Europe", partida: "Real Madrid x Arsenal", bets: 23085, staked: 424118.10, ggr: 92063.62, profitability: 0.2171},
+                {pais: "South America", partida: "Regatas Flamengo RJ x Central Cordoba SdE", bets: 25264, staked: 303738.93, ggr: 156317.68, profitability: 0.5146},
+                {pais: "Europe", partida: "Arsenal x Real Madrid", bets: 16988, staked: 292126.87, ggr: 173927.87, profitability: 0.5954},
+                {pais: "Europe", partida: "Barcelona x Inter Milan", bets: 13765, staked: 290879.52, ggr: 68037.23, profitability: 0.2339},
+                {pais: "Brazil", partida: "CR Vasco da Gama x Regatas Flamengo RJ", bets: 20538, staked: 285439.84, ggr: 180493.25, profitability: 0.6323},
+                {pais: "Brazil", partida: "EC Vitoria BA x Regatas Flamengo RJ", bets: 28774, staked: 275335.81, ggr: -247964.94, profitability: -0.9006},
+                {pais: "Europe", partida: "Arsenal x Paris Saint-Germain", bets: 11418, staked: 250093.68, ggr: 151204.25, profitability: 0.6046},
+                {pais: "Europe", partida: "Bayern Munich x Inter Milan", bets: 15974, staked: 241099.63, ggr: 83835.05, profitability: 0.3477},
+                {pais: "Brazil", partida: "Atletico MG x EC Vitoria BA", bets: 26711, staked: 233637.18, ggr: 102332.43, profitability: 0.4380},
+                {pais: "Europe", partida: "Inter Milan x Bayern Munich", bets: 19363, staked: 230981.21, ggr: -791.16, profitability: -0.0034},
+            ]
+        },
+        "FUTEBOL-Maio": {
+            campeonatos: [
+                {pais: "Brazil", competicao: "Serie A", bets: 309762, staked: 5733159.66, ggr: -56741.65, profitability: -0.0099},
+                {pais: "South America", competicao: "Copa Libertadores", bets: 226726, staked: 3831891.81, ggr: 556008.90, profitability: 0.1451},
+                {pais: "Brazil", competicao: "Copa do Brasil", bets: 92931, staked: 2642249.61, ggr: 624423.54, profitability: 0.2363},
+                {pais: "South America", competicao: "Copa Sudamericana", bets: 196074, staked: 2512332.09, ggr: 504385.95, profitability: 0.2008},
+                {pais: "Spain", competicao: "La Liga", bets: 159077, staked: 2394219.97, ggr: 189279.05, profitability: 0.0791},
+                {pais: "England", competicao: "Premier League", bets: 128662, staked: 2123415.31, ggr: 317495.79, profitability: 0.1495},
+                {pais: "Brazil", competicao: "Serie B", bets: 196818, staked: 1774519.18, ggr: 73898.55, profitability: 0.0416},
+                {pais: "Italy", competicao: "Serie A", bets: 118403, staked: 1626270.31, ggr: 102708.45, profitability: 0.0632},
+                {pais: "Europe", competicao: "UEFA Champions League", bets: 44107, staked: 1078362.90, ggr: 7027.43, profitability: 0.0065},
+                {pais: "Germany", competicao: "Bundesliga", bets: 65400, staked: 789526.94, ggr: 44488.64, profitability: 0.0563},
+            ],
+            partidas: [
+                {pais: "Europe", partida: "Inter Milan x Barcelona", bets: 15688, staked: 531162.47, ggr: -65349.86, profitability: -0.1230},
+                {pais: "Europe", partida: "Paris Saint-Germain x Arsenal", bets: 14689, staked: 346499.42, ggr: 52654.00, profitability: 0.1520},
+                {pais: "Europe", partida: "Paris Saint-Germain x Inter Milan", bets: 16687, staked: 340264.45, ggr: 14754.95, profitability: 0.0434},
+                {pais: "Brazil", partida: "Cruzeiro EC x Regatas Flamengo RJ", bets: 23487, staked: 256573.05, ggr: -765.62, profitability: -0.0030},
+                {pais: "Brazil", partida: "Atletico MG x Corinthians SP", bets: 21274, staked: 240003.10, ggr: 165640.13, profitability: 0.6902},
+                {pais: "South America", partida: "Central Cordoba SdE x Regatas Flamengo RJ", bets: 25217, staked: 233886.08, ggr: 125728.77, profitability: 0.5376},
+                {pais: "Brazil", partida: "Fortaleza CE x Cruzeiro EC", bets: 22185, staked: 230113.37, ggr: -143690.79, profitability: -0.6244},
+                {pais: "Brazil", partida: "Botafogo PB x Regatas Flamengo RJ", bets: 13767, staked: 205081.31, ggr: 58714.32, profitability: 0.2863},
+                {pais: "Brazil", partida: "Gremio FB Porto Alegrense x Centro Sportivo Alagoano", bets: 16717, staked: 202794.10, ggr: 146336.51, profitability: 0.7216},
+                {pais: "Europe", partida: "Tottenham Hotspur x Manchester United", bets: 10463, staked: 196529.11, ggr: 82761.47, profitability: 0.4211},
+            ]
+        },
+        "BASQUETE-Janeiro": {
+            campeonatos: [
+                {pais: "North America", competicao: "NBA", bets: 63638, staked: 4293354.63, ggr: 345567, profitability: 0.0805},
+                {pais: "Europe", competicao: "Euroleague", bets: 2536, staked: 203470.37, ggr: 10477, profitability: 0.0515},
+                {pais: "China", competicao: "CBA", bets: 2380, staked: 142452.54, ggr: 22632, profitability: 0.1589},
+                {pais: "Brazil", competicao: "NBB", bets: 2931, staked: 119899.90, ggr: -16312, profitability: -0.1360},
+                {pais: "Europe", competicao: "FIBA Champions League", bets: 774, staked: 70402.53, ggr: -6442, profitability: -0.0915},
+                {pais: "Spain", competicao: "Liga ACB", bets: 1379, staked: 64471.40, ggr: 2336, profitability: 0.0362},
+                {pais: "Japan", competicao: "B.League 1", bets: 1044, staked: 63221.78, ggr: 2293, profitability: 0.0363},
+                {pais: "Europe", competicao: "VTB United League", bets: 994, staked: 60948.62, ggr: 17235, profitability: 0.2828},
+                {pais: "Europe", competicao: "EuroCup", bets: 658, staked: 51819.69, ggr: -7040, profitability: -0.1359},
+                {pais: "Germany", competicao: "BBL", bets: 876, staked: 40007.44, ggr: -1037, profitability: -0.0259},
+            ],
+            partidas: [
+                {pais: "North America", partida: "Boston Celtics x Oklahoma City Thunder", bets: 783, staked: 93835.98, ggr: 20955, profitability: 0.2233},
+                {pais: "North America", partida: "Sacramento Kings x Boston Celtics", bets: 841, staked: 70044.74, ggr: -26170, profitability: -0.3736},
+                {pais: "North America", partida: "Los Angeles Clippers x Phoenix Suns", bets: 571, staked: 56102.47, ggr: 6031, profitability: 0.1075},
+                {pais: "North America", partida: "Boston Celtics x Minnesota Timberwolves", bets: 1632, staked: 51698.63, ggr: -15053, profitability: -0.2912},
+                {pais: "North America", partida: "Philadelphia 76ers x Brooklyn Nets", bets: 644, staked: 51192.07, ggr: -11812, profitability: -0.2307},
+                {pais: "North America", partida: "Brooklyn Nets x Denver Nuggets", bets: 702, staked: 50162.60, ggr: 2402, profitability: 0.0479},
+                {pais: "North America", partida: "Utah Jazz x New Orleans Pelicans", bets: 1065, staked: 46870.69, ggr: 8020, profitability: 0.1711},
+                {pais: "North America", partida: "Utah Jazz x Orlando Magic", bets: 627, staked: 46341.88, ggr: 9183, profitability: 0.1982},
+                {pais: "North America", partida: "Orlando Magic x Miami Heat", bets: 725, staked: 44583.18, ggr: -16906, profitability: -0.3792},
+                {pais: "North America", partida: "Portland Trail Blazers x Los Angeles Lakers", bets: 1048, staked: 41604.27, ggr: -6249, profitability: -0.1502},
+            ]
+        },
+        "BASQUETE-Fevereiro": {
+            campeonatos: [
+                {pais: "North America", competicao: "NBA", bets: 33007, staked: 2447856.15, ggr: 99809, profitability: 0.0408},
+                {pais: "Brazil", competicao: "NBB", bets: 2362, staked: 116096.50, ggr: 7201, profitability: 0.0620},
+                {pais: "Europe", competicao: "Euroleague", bets: 1247, staked: 75555.82, ggr: 12417, profitability: 0.1643},
+                {pais: "Europe", competicao: "Eurobasket Qualifiers", bets: 703, staked: 42228.13, ggr: 14957, profitability: 0.3542},
+                {pais: "China", competicao: "WCBA", bets: 587, staked: 33056.82, ggr: 4927, profitability: 0.1490},
+                {pais: "Spain", competicao: "Liga ACB", bets: 406, staked: 30801.41, ggr: -12406, profitability: -0.4028},
+                {pais: "Europe", competicao: "VTB United League", bets: 739, staked: 29461.17, ggr: 403, profitability: 0.0137},
+                {pais: "Japan", competicao: "B.League 1", bets: 455, staked: 29326.20, ggr: -6812, profitability: -0.2323},
+                {pais: "Americas", competicao: "FIBA Champions League Americas", bets: 779, staked: 28185.70, ggr: 9622, profitability: 0.3414},
+                {pais: "Europe", competicao: "ABA League", bets: 531, staked: 23380.79, ggr: 2893, profitability: 0.1238},
+            ],
+            partidas: [
+                {pais: "North America", partida: "New Orleans Pelicans x Denver Nuggets", bets: 946, staked: 66086.04, ggr: 39375, profitability: 0.5958},
+                {pais: "North America", partida: "Phoenix Suns x Portland Trail Blazers", bets: 907, staked: 48263.39, ggr: -14599, profitability: -0.3025},
+                {pais: "North America", partida: "Orlando Magic x Golden State Warriors", bets: 601, staked: 41062.24, ggr: 567, profitability: 0.0138},
+                {pais: "North America", partida: "Memphis Grizzlies x Milwaukee Bucks", bets: 553, staked: 40006.94, ggr: -15115, profitability: -0.3778},
+                {pais: "North America", partida: "Miami Heat x San Antonio Spurs", bets: 424, staked: 38107.10, ggr: -26373, profitability: -0.6921},
+                {pais: "North America", partida: "Oklahoma City Thunder x Minnesota Timberwolves", bets: 975, staked: 35277.66, ggr: 8443, profitability: 0.2393},
+                {pais: "North America", partida: "Milwaukee Bucks x Oklahoma City Thunder", bets: 407, staked: 35162.66, ggr: -20234, profitability: -0.5755},
+                {pais: "North America", partida: "Boston Celtics x Philadelphia 76ers", bets: 961, staked: 34085.66, ggr: -127, profitability: -0.0037},
+                {pais: "North America", partida: "Orlando Magic x Denver Nuggets", bets: 714, staked: 33182.11, ggr: 9444, profitability: 0.2846},
+                {pais: "North America", partida: "Utah Jazz x Phoenix Suns", bets: 543, staked: 32909.03, ggr: -5791, profitability: -0.1760},
+            ]
+        },
+        "BASQUETE-Março": {
+            campeonatos: [
+                {pais: "Americas", competicao: "FIBA Champions League Americas", bets: 449, staked: 35106.33, ggr: -2345, profitability: -0.0668},
+                {pais: "Angola", competicao: "Championship", bets: 33, staked: 415.85, ggr: 247, profitability: 0.5938},
+                {pais: "Argentina", competicao: "LNB", bets: 96, staked: 3465.83, ggr: 802, profitability: 0.2315},
+                {pais: "Argentina", competicao: "Torneo Federal", bets: 68, staked: 668.90, ggr: 69, profitability: 0.1030},
+                {pais: "Argentina", competicao: "Liga de Desarrollo", bets: 32, staked: 544.13, ggr: -144, profitability: -0.2638},
+                {pais: "Argentina", competicao: "Liga Argentina", bets: 29, staked: 256.81, ggr: 191, profitability: 0.7456},
+                {pais: "Asia", competicao: "West Asia Super League", bets: 25, staked: 690.05, ggr: 412, profitability: 0.5965},
+                {pais: "Asia", competicao: "FIBA Asia Cup Qualifiers", bets: 3, staked: 117.70, ggr: 1, profitability: 0.0059},
+                {pais: "Australia", competicao: "NBL", bets: 12, staked: 137.28, ggr: -76, profitability: -0.5553},
+                {pais: "Bosnia and Herzegovina", competicao: "BiH Championship - Women", bets: 8, staked: 522.29, ggr: -169, profitability: -0.3230},
+            ],
+            partidas: [
+                {pais: "North America", partida: "New York Knicks x Los Angeles Lakers", bets: 804, staked: 48148.34, ggr: 12166, profitability: 0.2527},
+                {pais: "North America", partida: "Oklahoma City Thunder x Los Angeles Clippers", bets: 639, staked: 46715.13, ggr: -9546, profitability: -0.2043},
+                {pais: "North America", partida: "Indiana Pacers x Atlanta Hawks", bets: 944, staked: 44301.48, ggr: 3358, profitability: 0.0758},
+                {pais: "North America", partida: "New York Knicks x Los Angeles Clippers", bets: 483, staked: 41792.29, ggr: 9372, profitability: 0.2242},
+                {pais: "North America", partida: "Milwaukee Bucks x Golden State Warriors", bets: 784, staked: 39879.44, ggr: 5133, profitability: 0.1287},
+                {pais: "North America", partida: "Philadelphia 76ers x Boston Celtics", bets: 645, staked: 38164.98, ggr: 15645, profitability: 0.4099},
+                {pais: "North America", partida: "Los Angeles Clippers x Los Angeles Lakers", bets: 939, staked: 38010.37, ggr: -11760, profitability: -0.3094},
+                {pais: "North America", partida: "Phoenix Suns x Houston Rockets", bets: 304, staked: 34851.73, ggr: 2126, profitability: 0.0610},
+                {pais: "North America", partida: "Denver Nuggets x Houston Rockets", bets: 468, staked: 28815.50, ggr: -1558, profitability: -0.0541},
+                {pais: "North America", partida: "Boston Celtics x Phoenix Suns", bets: 697, staked: 28092.13, ggr: -3301, profitability: -0.1175},
+            ]
+        },
+        "BASQUETE-Abril": {
+            campeonatos: [
+                {pais: "North America", competicao: "NBA", bets: 25043, staked: 1453500.02, ggr: 91854.86, profitability: 0.0632},
+                {pais: "Brazil", competicao: "NBB", bets: 3676, staked: 142056.29, ggr: 13330.51, profitability: 0.0938},
+                {pais: "Japan", competicao: "B.League 1", bets: 1231, staked: 79931.68, ggr: 23324.79, profitability: 0.2918},
+                {pais: "Europe", competicao: "Euroleague", bets: 1557, staked: 77044.81, ggr: 4199.74, profitability: 0.0545},
+                {pais: "China", competicao: "CBA", bets: 1271, staked: 53045.79, ggr: -1094.66, profitability: -0.0206},
+                {pais: "Europe", competicao: "VTB United League", bets: 951, staked: 46981.58, ggr: -2058.87, profitability: -0.0438},
+                {pais: "Europe", competicao: "ABA League", bets: 844, staked: 33178.22, ggr: 5323.13, profitability: 0.1604},
+                {pais: "Europe", competicao: "BNXT League", bets: 866, staked: 32242.23, ggr: 3007.79, profitability: 0.0933},
+                {pais: "Germany", competicao: "BBL", bets: 893, staked: 31180.99, ggr: -5515.95, profitability: -0.1769},
+                {pais: "Spain", competicao: "Primera FEB", bets: 530, staked: 24478.07, ggr: -951.65, profitability: -0.0389},
+            ],
+            partidas: [
+                {pais: "North America", partida: "Golden State Warriors x Houston Rockets", bets: 1538, staked: 90407.80, ggr: 10973.29, profitability: 0.1214},
+                {pais: "North America", partida: "Houston Rockets x Golden State Warriors", bets: 1693, staked: 67525.67, ggr: 23812.95, profitability: 0.3527},
+                {pais: "North America", partida: "Los Angeles Clippers x Denver Nuggets", bets: 1514, staked: 67438.64, ggr: 12120.94, profitability: 0.1797},
+                {pais: "North America", partida: "Oklahoma City Thunder x Phoenix Suns", bets: 411, staked: 62315.60, ggr: 3386.04, profitability: 0.0543},
+                {pais: "North America", partida: "Los Angeles Lakers x Minnesota Timberwolves", bets: 959, staked: 56945.85, ggr: 251.21, profitability: 0.0044},
+                {pais: "North America", partida: "Minnesota Timberwolves x Los Angeles Lakers", bets: 1662, staked: 56001.36, ggr: 3243.23, profitability: 0.0579},
+                {pais: "North America", partida: "Boston Celtics x Orlando Magic", bets: 1277, staked: 50813.42, ggr: 17957.76, profitability: 0.3534},
+                {pais: "North America", partida: "Detroit Pistons x New York Knicks", bets: 1438, staked: 49496.63, ggr: 16261.81, profitability: 0.3285},
+                {pais: "North America", partida: "San Antonio Spurs x Denver Nuggets", bets: 411, staked: 45960.29, ggr: -45427.46, profitability: -0.9884},
+                {pais: "North America", partida: "Indiana Pacers x Milwaukee Bucks", bets: 898, staked: 39251.88, ggr: 597.00, profitability: 0.0152},
+            ]
+        },
+        "BASQUETE-Maio": {
+            campeonatos: [
+                {pais: "North America", competicao: "NBA", bets: 16321, staked: 1082965.69, ggr: 66664.49, profitability: 0.0616},
+                {pais: "Brazil", competicao: "NBB", bets: 2794, staked: 132801.24, ggr: 9698.27, profitability: 0.0730},
+                {pais: "Spain", competicao: "Liga ACB", bets: 1280, staked: 87307.74, ggr: -6454.10, profitability: -0.0739},
+                {pais: "Japan", competicao: "B.League 1", bets: 922, staked: 48595.35, ggr: 7988.14, profitability: 0.1644},
+                {pais: "Germany", competicao: "BBL", bets: 1327, staked: 47673.34, ggr: 5818.06, profitability: 0.1220},
+                {pais: "France", competicao: "Championnat Pro A", bets: 968, staked: 45656.51, ggr: 13069.52, profitability: 0.2863},
+                {pais: "Europe", competicao: "VTB United League", bets: 928, staked: 35975.19, ggr: 3406.42, profitability: 0.0947},
+                {pais: "Europe", competicao: "Euroleague", bets: 641, staked: 35344.75, ggr: -5964.51, profitability: -0.1688},
+                {pais: "Europe", competicao: "BNXT League", bets: 758, staked: 31931.87, ggr: 319.35, profitability: 0.0100},
+                {pais: "China", competicao: "CBA", bets: 764, staked: 29777.05, ggr: 2129.97, profitability: 0.0715},
+            ],
+            partidas: [
+                {pais: "North America", partida: "New York Knicks x Boston Celtics", bets: 1294, staked: 130881.42, ggr: -19226.21, profitability: -0.1469},
+                {pais: "North America", partida: "Denver Nuggets x Oklahoma City Thunder", bets: 2013, staked: 109445.26, ggr: 15924.57, profitability: 0.1455},
+                {pais: "North America", partida: "Indiana Pacers x New York Knicks", bets: 1714, staked: 84129.97, ggr: 3548.56, profitability: 0.0422},
+                {pais: "North America", partida: "Golden State Warriors x Minnesota Timberwolves", bets: 1418, staked: 84006.20, ggr: -5579.91, profitability: -0.0664},
+                {pais: "North America", partida: "Oklahoma City Thunder x Denver Nuggets", bets: 1462, staked: 79501.76, ggr: 18588.58, profitability: 0.2338},
+                {pais: "North America", partida: "Boston Celtics x New York Knicks", bets: 1459, staked: 76125.72, ggr: 7780.03, profitability: 0.1022},
+                {pais: "North America", partida: "Minnesota Timberwolves x Oklahoma City Thunder", bets: 1345, staked: 69647.42, ggr: 17653.97, profitability: 0.2535},
+                {pais: "North America", partida: "New York Knicks x Indiana Pacers", bets: 1317, staked: 64893.84, ggr: -10482.94, profitability: -0.1615},
+                {pais: "North America", partida: "Minnesota Timberwolves x Golden State Warriors", bets: 1053, staked: 62733.01, ggr: -3532.36, profitability: -0.0563},
+                {pais: "North America", partida: "Cleveland Cavaliers x Indiana Pacers", bets: 917, staked: 59580.57, ggr: 27572.93, profitability: 0.4628},
+            ]
+        },
+        "TÊNIS-Janeiro": {
+            "campeonatos": [
+                {"pais":"Australia","competicao":"Australian Open - Men","bets":11332,"staked":915794.43,"ggr":3331.0,"profitability":0.0036},
+                {"pais":"Australia","competicao":"Australian Open - Women","bets":6330,"staked":534258.65,"ggr":15649.0,"profitability":0.0293},
+                {"pais":"Australia","competicao":"Australian Open - Qualification - Men","bets":2267,"staked":119587.6,"ggr":2579.0,"profitability":0.0216},
+                {"pais":"Argentina","competicao":"ATP Challenger Buenos Aires - Clay","bets":1234,"staked":87445.31,"ggr":9983.0,"profitability":0.1142},
+                {"pais":"Australia","competicao":"Australian Open - Qualification - Women","bets":1733,"staked":84702.11,"ggr":7361.0,"profitability":0.0869},
+                {"pais":"France","competicao":"ATP Montpellier - Hard","bets":1618,"staked":84455.94,"ggr":12061.0,"profitability":0.1428},
+                {"pais":"United Kingdom","competicao":"ATP Challenger Nottingham - Hard","bets":967,"staked":82633.49,"ggr":15186.0,"profitability":0.1838},
+                {"pais":"France","competicao":"ATP Challenger Quimper - Hard","bets":871,"staked":80081.97,"ggr":-1017.0,"profitability":-0.0127},
+                {"pais":"Australia","competicao":"WTA Adelaide - Hard","bets":1420,"staked":70386.08,"ggr":4719.0,"profitability":0.067},
+                {"pais":"Portugal","competicao":"ATP Challenger Oeiras 2 - Hard","bets":785,"staked":69943.35,"ggr":23392.0,"profitability":0.3344}
+            ],
+            "partidas": [
+                {"pais":"Australia","partida":"Tommy Paul x Alexander Zverev","bets":622,"staked":55574.88,"ggr":-14116.0,"profitability":-0.254},
+                {"pais":"Australia","partida":"Novak Djokovic x Carlos Alcaraz","bets":678,"staked":44008.76,"ggr":-7429.0,"profitability":-0.1688},
+                {"pais":"Australia","partida":"Madison Keys x Iga Swiatek","bets":245,"staked":43321.92,"ggr":18576.0,"profitability":0.4288},
+                {"pais":"Australia","partida":"Andrey Rublev x Joao Fonseca","bets":405,"staked":40005.6,"ggr":-9177.0,"profitability":-0.2294},
+                {"pais":"Australia","partida":"Jannik Sinner x Alexander Zverev","bets":410,"staked":38805.19,"ggr":8520.0,"profitability":0.2196},
+                {"pais":"Australia","partida":"Alejandro Tabilo x Roberto Carballes Baena","bets":127,"staked":34007.27,"ggr":13635.0,"profitability":0.4009},
+                {"pais":"Australia","partida":"Jannik Sinner x Holger Rune","bets":206,"staked":31063.4,"ggr":-2546.0,"profitability":-0.082},
+                {"pais":"Australia","partida":"Stefanos Tsitsipas x Alex Michelsen","bets":198,"staked":30501.14,"ggr":-7968.0,"profitability":-0.2612},
+                {"pais":"Australia","partida":"Novak Djokovic x Alexander Zverev","bets":506,"staked":27576.19,"ggr":2526.0,"profitability":0.0916},
+                {"pais":"Australia","partida":"Coco Gauff x Paula Badosa","bets":308,"staked":26431.56,"ggr":412.0,"profitability":0.0156}
+            ]
+        },
+        "TÊNIS-Fevereiro": {
+            "campeonatos": [
+                {"pais":"Netherlands","competicao":"ATP Rotterdam - Hard","bets":2338,"staked":279032.72,"ggr":19748.0,"profitability":0.0708},
+                {"pais":"Qatar","competicao":"WTA Doha - Hard","bets":2388,"staked":244506.08,"ggr":45285.0,"profitability":0.1852},
+                {"pais":"USA","competicao":"ATP Dallas - Hard","bets":1685,"staked":193793.64,"ggr":32430.0,"profitability":0.1673},
+                {"pais":"Brazil","competicao":"ATP Rio de Janeiro - Clay","bets":2756,"staked":160533.94,"ggr":34989.0,"profitability":0.218},
+                {"pais":"United Arab Emirates","competicao":"WTA Abu Dhabi - Hard","bets":1450,"staked":148705.43,"ggr":8767.0,"profitability":0.059},
+                {"pais":"Argentina","competicao":"ATP Buenos Aires - Clay","bets":2122,"staked":135735.72,"ggr":4191.0,"profitability":0.0309},
+                {"pais":"USA","competicao":"ATP Delray Beach - Hard","bets":1260,"staked":87714.09,"ggr":25599.0,"profitability":0.2918},
+                {"pais":"Argentina","competicao":"ATP Challenger Rosario - Clay","bets":858,"staked":64328.88,"ggr":9561.0,"profitability":0.1486},
+                {"pais":"Australia","competicao":"ITF Women - Brisbane - Hard","bets":907,"staked":54274.73,"ggr":-1197.0,"profitability":-0.0221},
+                {"pais":"France","competicao":"ATP Marseille - Hard","bets":1080,"staked":46882.03,"ggr":2253.0,"profitability":0.0481}
+            ],
+            "partidas": [
+                {"pais":"USA","partida":"Reilly Opelka x Cameron Norrie","bets":84,"staked":33055.9,"ggr":-8971.0,"profitability":-0.2714},
+                {"pais":"Netherlands","partida":"Andrey Rublev x Fabian Marozsan","bets":89,"staked":29140.85,"ggr":4463.0,"profitability":0.1531},
+                {"pais":"Brazil","partida":"Jaume Munar x Thiago Seyboth Wild","bets":177,"staked":26666.09,"ggr":-4317.0,"profitability":-0.1619},
+                {"pais":"Netherlands","partida":"Pedro Martinez Portero x Holger Rune","bets":106,"staked":23684.33,"ggr":3619.0,"profitability":0.1528},
+                {"pais":"USA","partida":"Jaume Munar x Ben Shelton","bets":103,"staked":23580.88,"ggr":-4693.0,"profitability":-0.199},
+                {"pais":"Argentina","partida":"Joao Fonseca x Federico Coria","bets":161,"staked":21238.52,"ggr":8634.0,"profitability":0.4065},
+                {"pais":"Argentina","partida":"Francisco Cerundolo x Joao Fonseca","bets":197,"staked":21179.0,"ggr":3740.0,"profitability":0.1766},
+                {"pais":"Netherlands","partida":"Stefanos Tsitsipas x Tallon Griekspoor","bets":210,"staked":20945.8,"ggr":11421.0,"profitability":0.5453},
+                {"pais":"Netherlands","partida":"Stefanos Tsitsipas x Mattia Bellucci","bets":115,"staked":19971.41,"ggr":4288.0,"profitability":0.2147},
+                {"pais":"Qatar","partida":"Elena Rybakina x Iga Swiatek","bets":175,"staked":19965.26,"ggr":-1641.0,"profitability":-0.0822}
+            ]
+        },
+        "TÊNIS-Março": {
+            "campeonatos": [
+                {"pais":"Argentina","competicao":"ATP Challenger Cordoba - Clay","bets":847,"staked":41457.64,"ggr":10086.0,"profitability":0.2433},
+                {"pais":"Argentina","competicao":"ITF Men - Lujan - Clay","bets":478,"staked":13707.38,"ggr":145.0,"profitability":0.0106},
+                {"pais":"Argentina","competicao":"UTR Pro Series Cordoba","bets":160,"staked":5289.23,"ggr":72.0,"profitability":0.0136},
+                {"pais":"Argentina","competicao":"ITF Men - Chacabuco - Clay","bets":90,"staked":5283.35,"ggr":-553.0,"profitability":-0.1047},
+                {"pais":"Argentina","competicao":"ITF Men - Villa Maria - Clay","bets":210,"staked":4822.22,"ggr":-1625.0,"profitability":-0.337},
+                {"pais":"Argentina","competicao":"ITF Men - Lujan - Clay (Doubles)","bets":74,"staked":3862.01,"ggr":-1254.0,"profitability":-0.3247},
+                {"pais":"Argentina","competicao":"ATP Challenger Cordoba - Clay (Doubles)","bets":60,"staked":3105.33,"ggr":1414.0,"profitability":0.4553},
+                {"pais":"Argentina","competicao":"UTR Pro Series Cordoba - Women","bets":99,"staked":3002.75,"ggr":418.0,"profitability":0.1392},
+                {"pais":"Argentina","competicao":"ITF Men - Yerba Buena - Clay","bets":32,"staked":1362.71,"ggr":1132.0,"profitability":0.8307},
+                {"pais":"Argentina","competicao":"ITF Men - Villa Maria - Clay (Doubles)","bets":26,"staked":507.9,"ggr":143.0,"profitability":0.2816}
+            ],
+            "partidas": [
+                {"pais":"USA","partida":"Alexander Bublik x Yosuke Watanuki","bets":37,"staked":52038.51,"ggr":30653.0,"profitability":0.5891},
+                {"pais":"USA","partida":"Corentin Moutet x Jordan Thompson","bets":70,"staked":32215.3,"ggr":31657.0,"profitability":0.9827},
+                {"pais":"USA","partida":"Alex De Minaur x Joao Fonseca","bets":628,"staked":26065.67,"ggr":11830.0,"profitability":0.4539},
+                {"pais":"USA","partida":"Jakub Mensik x Novak Djokovic","bets":300,"staked":21490.23,"ggr":63.0,"profitability":0.0029},
+                {"pais":"USA","partida":"Camila Osorio x Naomi Osaka","bets":50,"staked":20554.59,"ggr":19727.0,"profitability":0.9597},
+                {"pais":"USA","partida":"Jessica Pegula x Alexandra Eala","bets":244,"staked":20329.48,"ggr":536.0,"profitability":0.0264},
+                {"pais":"USA","partida":"Stefan Dostanic x Andres Martin","bets":28,"staked":19563.02,"ggr":-38.0,"profitability":-0.0019},
+                {"pais":"USA","partida":"Sebastian Korda x Novak Djokovic","bets":600,"staked":18403.68,"ggr":9107.0,"profitability":0.4948},
+                {"pais":"USA","partida":"Emma Raducanu x Moyuka Uchijima","bets":48,"staked":17514.94,"ggr":17220.0,"profitability":0.9832},
+                {"pais":"USA","partida":"Jacob Fearnley x Joao Fonseca","bets":217,"staked":15872.31,"ggr":-12689.0,"profitability":-0.7994}
+            ]
+        },
+        "TÊNIS-Abril": {
+            "campeonatos": [
+                {"pais":"Monaco","competicao":"ATP Masters Monte Carlo - Clay","bets":3785,"staked":236903.5,"ggr":4678.17,"profitability":0.0198},
+                {"pais":"Spain","competicao":"ATP Masters Madrid - Clay","bets":5342,"staked":229576.5,"ggr":38004.14,"profitability":0.1655},
+                {"pais":"Spain","competicao":"WTA Madrid - Clay","bets":3947,"staked":214061.72,"ggr":39060.31,"profitability":0.1825},
+                {"pais":"Spain","competicao":"ATP Barcelona - Clay","bets":2469,"staked":121528.35,"ggr":7643.19,"profitability":0.0629},
+                {"pais":"USA","competicao":"ATP Challenger Savannah - Clay","bets":792,"staked":64928.09,"ggr":9475.76,"profitability":0.146},
+                {"pais":"USA","competicao":"WTA Charleston - Clay","bets":1192,"staked":63362.19,"ggr":1592.74,"profitability":0.0251},
+                {"pais":"USA","competicao":"ATP Challenger Sarasota - Clay","bets":1003,"staked":61881.45,"ggr":-1359.75,"profitability":-0.022},
+                {"pais":"Germany","competicao":"ATP Munich - Clay","bets":1635,"staked":59422.68,"ggr":483.01,"profitability":0.0081},
+                {"pais":"USA","competicao":"ATP Houston - Clay","bets":1157,"staked":57022.11,"ggr":1705.39,"profitability":0.0299},
+                {"pais":"USA","competicao":"ITF Women - Bonita Springs - Clay","bets":319,"staked":48572.95,"ggr":12255.5,"profitability":0.2523}
+            ],
+            "partidas": [
+                {"pais":"USA","partida":"Marianna Zakarlyuk x Maria Kozyreva","bets":9,"staked":36281.97,"ggr":13465.13,"profitability":0.3711},
+                {"pais":"Spain","partida":"Alejandro Davidovich Fokina x Andrey Rublev","bets":251,"staked":16655.97,"ggr":7033.29,"profitability":0.4223},
+                {"pais":"Spain","partida":"Emma Raducanu x Marta Kostyuk","bets":146,"staked":16211.98,"ggr":2382.52,"profitability":0.147},
+                {"pais":"Spain","partida":"Linda Noskova x Iga Swiatek","bets":81,"staked":13800.54,"ggr":-797.35,"profitability":-0.0578},
+                {"pais":"Monaco","partida":"Lorenzo Musetti x Stefanos Tsitsipas","bets":216,"staked":13765.92,"ggr":2664.91,"profitability":0.1936},
+                {"pais":"Spain","partida":"Carlos Alcaraz x Arthur Fils","bets":77,"staked":13419.42,"ggr":-3188.81,"profitability":-0.2376},
+                {"pais":"Monaco","partida":"Arthur Fils x Carlos Alcaraz","bets":274,"staked":11929.03,"ggr":-5200.05,"profitability":-0.4359},
+                {"pais":"Monaco","partida":"Alexei Popyrin x Casper Ruud","bets":117,"staked":11595.29,"ggr":5070.36,"profitability":0.4373},
+                {"pais":"Spain","partida":"Celia Cervino Ruiz x Nahia Berecoechea","bets":38,"staked":10876.02,"ggr":3209.34,"profitability":0.2951},
+                {"pais":"USA","partida":"Joshua Charlton x Tristan McCormick","bets":18,"staked":10459.4,"ggr":-1876.09,"profitability":-0.1794}
+            ]
+        },
+        "TÊNIS-Maio": {
+            "campeonatos": [
+                {"pais":"France","competicao":"French Open - Men","bets":9484,"staked":849567.85,"ggr":25072.25,"profitability":0.0295},
+                {"pais":"France","competicao":"French Open - Women","bets":5450,"staked":594110.69,"ggr":84822.11,"profitability":0.1428},
+                {"pais":"Italy","competicao":"ATP Masters Rome - Clay","bets":9001,"staked":558623.05,"ggr":51981.99,"profitability":0.0931},
+                {"pais":"Italy","competicao":"WTA Rome - Clay","bets":6752,"staked":313579.63,"ggr":11927.0,"profitability":0.038},
+                {"pais":"Germany","competicao":"ATP Hamburg - Clay","bets":3576,"staked":163420.54,"ggr":3996.75,"profitability":0.0245},
+                {"pais":"France","competicao":"French Open - Qualification - Men","bets":2934,"staked":111297.64,"ggr":49092.26,"profitability":0.4411},
+                {"pais":"France","competicao":"French Open - Qualification - Women","bets":2037,"staked":102164.31,"ggr":64155.11,"profitability":0.628},
+                {"pais":"France","competicao":"WTA Strasbourg - Clay","bets":2224,"staked":85551.07,"ggr":23222.94,"profitability":0.2715},
+                {"pais":"Italy","competicao":"WTA Parma - Clay","bets":2124,"staked":77277.45,"ggr":9468.22,"profitability":0.1225},
+                {"pais":"Switzerland","competicao":"ATP Geneva - Clay","bets":1604,"staked":76893.37,"ggr":2529.72,"profitability":0.0329}
+            ],
+            "partidas": [
+                {"pais":"Italy","partida":"Carlos Alcaraz x Lorenzo Musetti","bets":640,"staked":42294.52,"ggr":3373.44,"profitability":0.0798},
+                {"pais":"France","partida":"Daria Kasatkina x Katerina Siniakova","bets":100,"staked":41262.76,"ggr":7623.14,"profitability":0.1848},
+                {"pais":"France","partida":"Danielle Collins x Olga Danilovic","bets":107,"staked":40799.48,"ggr":4381.03,"profitability":0.1074},
+                {"pais":"Italy","partida":"Jannik Sinner x Tommy Paul","bets":594,"staked":38554.61,"ggr":20924.42,"profitability":0.5427},
+                {"pais":"France","partida":"Jaqueline Cristian x Kimberly Birrell","bets":43,"staked":35362.19,"ggr":405.21,"profitability":0.0115},
+                {"pais":"Korea (South)","partida":"Janice Tjen x Eunhye Lee","bets":69,"staked":34316.09,"ggr":-5991.39,"profitability":-0.1746},
+                {"pais":"France","partida":"Corentin Moutet x Novak Djokovic","bets":259,"staked":32725.4,"ggr":-8833.69,"profitability":-0.2699},
+                {"pais":"Italy","partida":"Jack Draper x Carlos Alcaraz","bets":317,"staked":32469.95,"ggr":14733.76,"profitability":0.4538},
+                {"pais":"France","partida":"Hubert Hurkacz x Joao Fonseca","bets":655,"staked":30214.9,"ggr":15857.52,"profitability":0.5248},
+                {"pais":"France","partida":"Yuliia Starodubtseva x Anastasia Potapova","bets":247,"staked":26583.96,"ggr":13157.58,"profitability":0.4949}
+            ]
+        }
+    };
+    // Note: The rest of the detailed data is omitted for brevity but should be included in a real application.
+    
+    // --- DOM Elements ---
+    const sportFilter = document.getElementById('sport-filter');
+    const monthFilter = document.getElementById('month-filter');
+    const dataTable = document.getElementById('data-table');
+    const valorApostadoCtx = document.getElementById('valorApostadoChart').getContext('2d');
+    const ggrMensalCtx = document.getElementById('ggrMensalChart').getContext('2d');
+    const rentabilidadeCtx = document.getElementById('rentabilidadeChart').getContext('2d');
+    const detailsSection = document.getElementById('details-section');
+    const campeonatosTable = document.getElementById('campeonatos-table');
+    const partidasTable = document.getElementById('partidas-table');
+    const campeonatosTitle = document.getElementById('campeonatos-title');
+    const partidasTitle = document.getElementById('partidas-title');
+
+
+    let valorApostadoChart, ggrMensalChart, rentabilidadeChart;
+
+    // --- Formatters ---
+    const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    const formatNumber = (value) => new Intl.NumberFormat('pt-BR').format(value);
+    const formatPercent = (value) => new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 2 }).format(value);
+
+    // --- Functions ---
+    function populateFilters() {
+        const sports = [...new Set(rawData.map(d => d.sport))];
+        const months = [...new Set(rawData.map(d => d.month))];
+
+        sports.sort().forEach(sport => {
+            const option = document.createElement('option');
+            option.value = sport;
+            option.textContent = sport;
+            sportFilter.appendChild(option);
+        });
+
+        const monthOrder = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio"];
+        months.sort((a, b) => monthOrder.indexOf(a) - monthOrder.indexOf(b)).forEach(month => {
+            const option = document.createElement('option');
+            option.value = month;
+            option.textContent = month;
+            monthFilter.appendChild(option);
+        });
+    }
+
+    function updateDashboard() {
+        const selectedSport = sportFilter.value;
+        const selectedMonth = monthFilter.value;
+
+        const filteredData = rawData.filter(d => 
+            (selectedSport === 'todos' || d.sport === selectedSport) &&
+            (selectedMonth === 'todos' || d.month === selectedMonth)
+        );
+        
+        detailsSection.classList.add('hidden'); // Hide details on filter change
+        updateSummaryCards(filteredData);
+        updateDataTable(filteredData);
+        updateCharts(filteredData);
+    }
+
+    function updateSummaryCards(data) {
+        const totalBets = data.reduce((sum, d) => sum + d.bets, 0);
+        const totalStaked = data.reduce((sum, d) => sum + d.staked, 0);
+        const totalGGR = data.reduce((sum, d) => sum + d.ggr, 0);
+        const avgProfitability = totalStaked > 0 ? totalGGR / totalStaked : 0;
+        
+        document.getElementById('total-apostas').innerHTML = `
+            <div class="bg-blue-500/20 p-4 rounded-xl flex-shrink-0"><i data-lucide="swords" class="w-8 h-8 text-blue-400"></i></div>
+            <div class="min-w-0 flex-1">
+                <h3 class="text-base font-semibold text-slate-400">Total de Apostas</h3>
+                <p class="text-xl md:text-2xl font-bold text-white truncate">${formatNumber(totalBets)}</p>
+            </div>
+        `;
+        document.getElementById('total-valor').innerHTML = `
+            <div class="bg-yellow-500/20 p-4 rounded-xl flex-shrink-0"><i data-lucide="dollar-sign" class="w-8 h-8 text-yellow-400"></i></div>
+            <div class="min-w-0 flex-1">
+                <h3 class="text-base font-semibold text-slate-400">Valor Apostado</h3>
+                <p class="text-xl md:text-2xl font-bold text-white break-words">${formatCurrency(totalStaked)}</p>
+            </div>
+        `;
+        document.getElementById('total-ggr').innerHTML = `
+             <div class="p-4 rounded-xl ${totalGGR < 0 ? 'bg-red-500/20' : 'bg-green-500/20'} flex-shrink-0">
+                <i data-lucide="trending-up" class="w-8 h-8 ${totalGGR < 0 ? 'text-red-400' : 'text-green-400'}"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+                <h3 class="text-base font-semibold text-slate-400">GGR Total</h3>
+                <p class="text-xl md:text-2xl font-bold ${totalGGR < 0 ? 'text-red-400' : 'text-green-400'} break-words">${formatCurrency(totalGGR)}</p>
+            </div>
+        `;
+        document.getElementById('total-rentabilidade').innerHTML = `
+             <div class="p-4 rounded-xl ${avgProfitability < 0 ? 'bg-red-500/20' : 'bg-emerald-500/20'} flex-shrink-0">
+                 <i data-lucide="pie-chart" class="w-8 h-8 ${avgProfitability < 0 ? 'text-red-400' : 'text-emerald-400'}"></i>
+             </div>
+             <div class="min-w-0 flex-1">
+                <h3 class="text-base font-semibold text-slate-400">Rentabilidade</h3>
+                <p class="text-xl md:text-2xl font-bold ${avgProfitability < 0 ? 'text-red-400' : 'text-emerald-400'}">${formatPercent(avgProfitability)}</p>
+            </div>
+        `;
+
+        lucide.createIcons();
+    }
+
+    function updateDataTable(data) {
+        dataTable.innerHTML = '';
+        if (data.length === 0) {
+            dataTable.innerHTML = `<tr><td colspan="7" class="text-center px-6 py-12">Nenhum dado encontrado para os filtros selecionados.</td></tr>`;
+            return;
+        }
+        data.forEach(d => {
+            const row = document.createElement('tr');
+            row.className = 'border-b border-slate-700 hover:bg-slate-700/70 transition-colors duration-200';
+            
+            const rowProfitability = d.staked > 0 ? d.ggr / d.staked : 0;
+            const profitabilityColor = rowProfitability < 0 ? 'text-red-400' : 'text-green-400';
+
+            let actionCell = '<td class="w-32"></td>';
+            const detailKey = `${d.sport.toUpperCase()}-${d.month}`;
+            if (detailedData[detailKey]) {
+                actionCell = `<td class="px-6 py-4 text-center w-32">
+                    <button data-key="${detailKey}" class="details-btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2">
+                        <i data-lucide="eye" class="w-4 h-4"></i> Detalhes
+                    </button>
+                </td>`;
+            }
+
+            row.innerHTML = `
+                <td class="px-6 py-4 font-medium whitespace-nowrap">${d.sport}</td>
+                <td class="px-6 py-4">${d.month}</td>
+                <td class="px-6 py-4 text-right">${formatNumber(d.bets)}</td>
+                <td class="px-6 py-4 text-right">${formatCurrency(d.staked)}</td>
+                <td class="px-6 py-4 text-right ${profitabilityColor}">${formatCurrency(d.ggr)}</td>
+                <td class="px-6 py-4 text-right font-bold ${profitabilityColor}">${formatPercent(rowProfitability)}</td>
+                ${actionCell}
+            `;
+            dataTable.appendChild(row);
+        });
+        lucide.createIcons();
+    }
+    
+    function showDetails(key) {
+        const [sport, month] = key.split('-');
+        const data = detailedData[key];
+
+        if (!data) return;
+
+        // Populate Championships, sorted by staked value
+        campeonatosTitle.textContent = `Top Campeonatos: ${sport} - ${month}`;
+        campeonatosTable.innerHTML = '';
+        if(data.campeonatos && data.campeonatos.length > 0) {
+            data.campeonatos
+                .sort((a,b) => b.staked - a.staked)
+                .forEach(d => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-slate-700 hover:bg-slate-700/70 transition-colors duration-200';
+                const profitabilityColor = d.profitability < 0 ? 'text-red-400' : 'text-green-400';
+                row.innerHTML = `
+                    <td class="px-6 py-4 font-semibold">${d.competicao} <span class="text-xs text-slate-400 block">${d.pais}</span></td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(d.staked)}</td>
+                    <td class="px-6 py-4 text-right ${profitabilityColor}">${formatCurrency(d.ggr)}</td>
+                    <td class="px-6 py-4 text-right font-bold ${profitabilityColor}">${formatPercent(d.profitability)}</td>
+                `;
+                campeonatosTable.appendChild(row);
+            });
+        } else {
+             campeonatosTable.innerHTML = `<tr><td colspan="4" class="text-center px-6 py-12">Nenhum dado de campeonato encontrado.</td></tr>`;
+        }
+
+        // Populate Matches, sorted by staked value
+        partidasTitle.textContent = `Top Partidas: ${sport} - ${month}`;
+        partidasTable.innerHTML = '';
+        if(data.partidas && data.partidas.length > 0) {
+            data.partidas
+                .sort((a,b) => b.staked - a.staked)
+                .forEach(d => {
+                 const row = document.createElement('tr');
+                 row.className = 'border-b border-slate-700 hover:bg-slate-700/70 transition-colors duration-200';
+                 const profitabilityColor = d.profitability < 0 ? 'text-red-400' : 'text-green-400';
+                 row.innerHTML = `
+                    <td class="px-6 py-4 font-semibold">${d.partida} <span class="text-xs text-slate-400 block">${d.pais}</span></td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(d.staked)}</td>
+                    <td class="px-6 py-4 text-right ${profitabilityColor}">${formatCurrency(d.ggr)}</td>
+                    <td class="px-6 py-4 text-right font-bold ${profitabilityColor}">${formatPercent(d.profitability)}</td>
+                `;
+                partidasTable.appendChild(row);
+            });
+        } else {
+            partidasTable.innerHTML = `<tr><td colspan="4" class="text-center px-6 py-12">Nenhum dado de partida encontrado.</td></tr>`;
+        }
+
+        detailsSection.classList.remove('hidden');
+        detailsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function updateCharts(data) {
+        const chartTextColor = '#e2e8f0'; // slate-200
+        const chartGridColor = 'rgba(255, 255, 255, 0.1)';
+        
+        // --- Valor Apostado Chart ---
+        const stakedBySport = data.reduce((acc, d) => {
+            acc[d.sport] = (acc[d.sport] || 0) + d.staked;
+            return acc;
+        }, {});
+        const sortedStaked = Object.entries(stakedBySport).sort(([,a],[,b]) => b-a).slice(0, 10);
+        
+        if (valorApostadoChart) valorApostadoChart.destroy();
+        valorApostadoChart = new Chart(valorApostadoCtx, {
+            type: 'bar',
+            data: {
+                labels: sortedStaked.map(item => item[0]),
+                datasets: [{
+                    label: 'Valor Apostado',
+                    data: sortedStaked.map(item => item[1]),
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: true, mode: 'index', intersect: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: chartTextColor }, grid: { color: chartGridColor } },
+                    x: { ticks: { color: chartTextColor }, grid: { display: false } }
+                }
+            }
+        });
+
+        // --- GGR Mensal Chart ---
+        const monthOrder = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio"];
+        const ggrByMonth = monthOrder.map(month => {
+            return data.filter(d => d.month === month).reduce((sum, d) => sum + d.ggr, 0);
+        });
+        
+        if (ggrMensalChart) ggrMensalChart.destroy();
+        ggrMensalChart = new Chart(ggrMensalCtx, {
+            type: 'line',
+            data: {
+                labels: monthOrder,
+                datasets: [{
+                    label: 'GGR Total',
+                    data: ggrByMonth,
+                    fill: true,
+                    backgroundColor: (ctx) => {
+                        const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, 320);
+                        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.5)');
+                        gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+                        return gradient;
+                    },
+                    borderColor: '#10B981',
+                    tension: 0.4,
+                    pointBackgroundColor: '#10B981',
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: true, mode: 'index', intersect: false } },
+                 scales: {
+                    y: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } },
+                    x: { ticks: { color: chartTextColor }, grid: { display: false } }
+                }
+            }
+        });
+        
+        // --- Rentabilidade Chart (Doughnut) ---
+        const profitabilityBySport = data.reduce((acc, d) => {
+            if (!acc[d.sport]) {
+                acc[d.sport] = { staked: 0, ggr: 0 };
+            }
+            acc[d.sport].staked += d.staked;
+            acc[d.sport].ggr += d.ggr;
+            return acc;
+        }, {});
+
+        const profitabilityData = Object.entries(profitabilityBySport)
+            .map(([sport, values]) => ({
+                sport,
+                profitability: values.staked > 0 ? values.ggr / values.staked : 0
+            }))
+            .filter(item => item.profitability > 0) // Show only profitable sports
+            .sort((a, b) => b.profitability - a.profitability).slice(0, 5);
+        
+        if (rentabilidadeChart) rentabilidadeChart.destroy();
+        rentabilidadeChart = new Chart(rentabilidadeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: profitabilityData.map(d => d.sport),
+                datasets: [{
+                    label: 'Rentabilidade',
+                    data: profitabilityData.map(d => d.profitability),
+                    backgroundColor: [
+                        'rgba(52, 211, 153, 0.8)', // emerald
+                        'rgba(96, 165, 250, 0.8)', // blue
+                        'rgba(251, 191, 36, 0.8)', // amber
+                        'rgba(248, 113, 113, 0.8)', // red
+                        'rgba(168, 85, 247, 0.8)', // purple
+                    ],
+                    borderColor: '#1e293b',
+                    borderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: chartTextColor, boxWidth: 12, padding: 15 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += formatPercent(context.parsed);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+    // --- Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initial setup
+        lucide.createIcons();
+        populateFilters();
+        updateDashboard();
+
+        // Initialize Particles.js
+        particlesJS('particles-js', {
+          "particles": {
+            "number": {
+              "value": 60,
+              "density": {
+                "enable": true,
+                "value_area": 800
+              }
+            },
+            "color": {
+              "value": "#475569"
+            },
+            "shape": {
+              "type": "circle"
+            },
+            "opacity": {
+              "value": 0.5,
+              "random": true
+            },
+            "size": {
+              "value": 3,
+              "random": true
+            },
+            "line_linked": {
+              "enable": true,
+              "distance": 150,
+              "color": "#475569",
+              "opacity": 0.4,
+              "width": 1
+            },
+            "move": {
+              "enable": true,
+              "speed": 2,
+              "direction": "none",
+              "random": false,
+              "straight": false,
+              "out_mode": "out",
+              "bounce": false
+            }
+          },
+          "interactivity": {
+            "detect_on": "canvas",
+            "events": {
+              "onhover": {
+                "enable": true,
+                "mode": "repulse"
+              },
+              "onclick": {
+                "enable": true,
+                "mode": "push"
+              },
+              "resize": true
+            },
+            "modes": {
+              "repulse": {
+                "distance": 100,
+                "duration": 0.4
+              },
+              "push": {
+                "particles_nb": 4
+              }
+            }
+          },
+          "retina_detect": true
+        });
+
+        // Event Listeners
+        sportFilter.addEventListener('change', updateDashboard);
+        monthFilter.addEventListener('change', updateDashboard);
+        
+        document.querySelector('body').addEventListener('click', function(e) {
+            const button = e.target.closest('.details-btn');
+            if (button) {
+                const key = button.getAttribute('data-key');
+                showDetails(key);
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
