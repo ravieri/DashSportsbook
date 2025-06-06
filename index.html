@@ -29,6 +29,7 @@
             font-family: 'Inter', sans-serif;
             background-color: #0f172a;
             color: #e2e8f0; /* slate-200 */
+            overflow: hidden; /* Hide scrollbars while login is active */
         }
         
         /* Particles.js background container */
@@ -38,9 +39,25 @@
             height: 100%;
             top: 0;
             left: 0;
-            z-index: -1; /* Place it behind all content */
+            z-index: 0; /* Behind login and dashboard */
         }
         
+        /* Login Overlay */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.5s ease-out;
+        }
+
         /* Main content needs a relative position to be on top of particles */
         .main-container {
             position: relative;
@@ -75,7 +92,7 @@
             background: #64748b; /* slate-500 */
         }
 
-        /* Animation for cards loading */
+        /* Animation for cards loading and dashboard fade in */
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -86,9 +103,20 @@
                 transform: translateY(0);
             }
         }
-        .summary-card {
+        .summary-card, .dashboard-fade-in {
             animation: fadeIn 0.5s ease-out forwards;
         }
+        
+        /* Shake animation for wrong password */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
 
         /* Chart tooltip styling */
         .chartjs-tooltip {
@@ -103,12 +131,27 @@
 
     <!-- Particles.js container -->
     <div id="particles-js"></div>
+
+    <!-- Login Screen -->
+    <div id="login-overlay">
+        <div id="login-box" class="card p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+            <h2 class="text-2xl font-bold text-white mb-2">Acesso Restrito</h2>
+            <p class="text-slate-400 mb-6">Por favor, insira a senha para continuar.</p>
+            <form id="login-form">
+                <input type="password" id="password-input" class="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 text-center text-lg tracking-widest focus:ring-blue-500 focus:border-blue-500 mb-4" placeholder="••••">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105">
+                    Entrar
+                </button>
+                <p id="error-message" class="text-red-400 mt-4 h-5"></p>
+            </form>
+        </div>
+    </div>
     
-    <div class="main-container p-4 sm:p-6 lg:p-8">
+    <div id="dashboard-content" class="main-container p-4 sm:p-6 lg:p-8 hidden">
         <div class="max-w-screen-2xl mx-auto">
             <!-- Header -->
             <header class="mb-8 text-center">
-                <h1 class="text-4xl sm:text-5xl font-extrabold text-white drop-shadow-lg">Dashboard de SportsBook</h1>
+                <h1 class="text-4xl sm:text-5xl font-extrabold text-white drop-shadow-lg">Dashboard de Performance</h1>
                 <p class="text-slate-400 mt-2 text-lg">Análise Detalhada de Apostas Esportivas (Jan-Maio)</p>
             </header>
 
@@ -676,6 +719,12 @@
     const partidasTable = document.getElementById('partidas-table');
     const campeonatosTitle = document.getElementById('campeonatos-title');
     const partidasTitle = document.getElementById('partidas-title');
+    const loginForm = document.getElementById('login-form');
+    const loginOverlay = document.getElementById('login-overlay');
+    const dashboardContent = document.getElementById('dashboard-content');
+    const passwordInput = document.getElementById('password-input');
+    const errorMessage = document.getElementById('error-message');
+    const loginBox = document.getElementById('login-box');
 
 
     let valorApostadoChart, ggrMensalChart, rentabilidadeChart;
@@ -686,6 +735,30 @@
     const formatPercent = (value) => new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 2 }).format(value);
 
     // --- Functions ---
+    function initializeDashboard() {
+        // This function now contains all the setup logic
+        lucide.createIcons();
+        populateFilters();
+        updateDashboard();
+
+        // Initialize Particles.js
+        particlesJS('particles-js', {
+          "particles": { "number": { "value": 60, "density": { "enable": true, "value_area": 800 } }, "color": { "value": "#475569" }, "shape": { "type": "circle" }, "opacity": { "value": 0.5, "random": true }, "size": { "value": 3, "random": true }, "line_linked": { "enable": true, "distance": 150, "color": "#475569", "opacity": 0.4, "width": 1 }, "move": { "enable": true, "speed": 2, "direction": "none", "random": false, "straight": false, "out_mode": "out", "bounce": false } }, "interactivity": { "detect_on": "canvas", "events": { "onhover": { "enable": true, "mode": "repulse" }, "onclick": { "enable": true, "mode": "push" }, "resize": true }, "modes": { "repulse": { "distance": 100, "duration": 0.4 }, "push": { "particles_nb": 4 } } }, "retina_detect": true
+        });
+
+        // Event Listeners for dashboard elements
+        sportFilter.addEventListener('change', updateDashboard);
+        monthFilter.addEventListener('change', updateDashboard);
+        
+        dashboardContent.addEventListener('click', function(e) {
+            const button = e.target.closest('.details-btn');
+            if (button) {
+                const key = button.getAttribute('data-key');
+                showDetails(key);
+            }
+        });
+    }
+
     function populateFilters() {
         const sports = [...new Set(rawData.map(d => d.sport))];
         const months = [...new Set(rawData.map(d => d.month))];
@@ -715,7 +788,7 @@
             (selectedMonth === 'todos' || d.month === selectedMonth)
         );
         
-        detailsSection.classList.add('hidden'); // Hide details on filter change
+        detailsSection.classList.add('hidden');
         updateSummaryCards(filteredData);
         updateDataTable(filteredData);
         updateCharts(filteredData);
@@ -806,7 +879,6 @@
 
         if (!data) return;
 
-        // Populate Championships, sorted by staked value
         campeonatosTitle.textContent = `Top Campeonatos: ${sport} - ${month}`;
         campeonatosTable.innerHTML = '';
         if(data.campeonatos && data.campeonatos.length > 0) {
@@ -828,7 +900,6 @@
              campeonatosTable.innerHTML = `<tr><td colspan="4" class="text-center px-6 py-12">Nenhum dado de campeonato encontrado.</td></tr>`;
         }
 
-        // Populate Matches, sorted by staked value
         partidasTitle.textContent = `Top Partidas: ${sport} - ${month}`;
         partidasTable.innerHTML = '';
         if(data.partidas && data.partidas.length > 0) {
@@ -855,10 +926,9 @@
     }
 
     function updateCharts(data) {
-        const chartTextColor = '#e2e8f0'; // slate-200
+        const chartTextColor = '#e2e8f0'; 
         const chartGridColor = 'rgba(255, 255, 255, 0.1)';
         
-        // --- Valor Apostado Chart ---
         const stakedBySport = data.reduce((acc, d) => {
             acc[d.sport] = (acc[d.sport] || 0) + d.staked;
             return acc;
@@ -868,32 +938,12 @@
         if (valorApostadoChart) valorApostadoChart.destroy();
         valorApostadoChart = new Chart(valorApostadoCtx, {
             type: 'bar',
-            data: {
-                labels: sortedStaked.map(item => item[0]),
-                datasets: [{
-                    label: 'Valor Apostado',
-                    data: sortedStaked.map(item => item[1]),
-                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                    borderColor: 'rgba(59, 130, 246, 1)',
-                    borderWidth: 1,
-                    borderRadius: 5
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false }, tooltip: { enabled: true, mode: 'index', intersect: false } },
-                scales: {
-                    y: { beginAtZero: true, ticks: { color: chartTextColor }, grid: { color: chartGridColor } },
-                    x: { ticks: { color: chartTextColor }, grid: { display: false } }
-                }
-            }
+            data: { labels: sortedStaked.map(item => item[0]), datasets: [{ label: 'Valor Apostado', data: sortedStaked.map(item => item[1]), backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1, borderRadius: 5 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: true, mode: 'index', intersect: false } }, scales: { y: { beginAtZero: true, ticks: { color: chartTextColor }, grid: { color: chartGridColor } }, x: { ticks: { color: chartTextColor }, grid: { display: false } } } }
         });
 
-        // --- GGR Mensal Chart ---
         const monthOrder = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio"];
-        const ggrByMonth = monthOrder.map(month => {
-            return data.filter(d => d.month === month).reduce((sum, d) => sum + d.ggr, 0);
-        });
+        const ggrByMonth = monthOrder.map(month => data.filter(d => d.month === month).reduce((sum, d) => sum + d.ggr, 0));
         
         if (ggrMensalChart) ggrMensalChart.destroy();
         ggrMensalChart = new Chart(ggrMensalCtx, {
@@ -904,44 +954,22 @@
                     label: 'GGR Total',
                     data: ggrByMonth,
                     fill: true,
-                    backgroundColor: (ctx) => {
-                        const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, 320);
-                        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.5)');
-                        gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
-                        return gradient;
-                    },
-                    borderColor: '#10B981',
-                    tension: 0.4,
-                    pointBackgroundColor: '#10B981',
-                    pointRadius: 5
+                    backgroundColor: (ctx) => { const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, 320); gradient.addColorStop(0, 'rgba(16, 185, 129, 0.5)'); gradient.addColorStop(1, 'rgba(16, 185, 129, 0)'); return gradient; },
+                    borderColor: '#10B981', tension: 0.4, pointBackgroundColor: '#10B981', pointRadius: 5
                 }]
             },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false }, tooltip: { enabled: true, mode: 'index', intersect: false } },
-                 scales: {
-                    y: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } },
-                    x: { ticks: { color: chartTextColor }, grid: { display: false } }
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: true, mode: 'index', intersect: false } }, scales: { y: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } }, x: { ticks: { color: chartTextColor }, grid: { display: false } } } }
         });
         
-        // --- Rentabilidade Chart (Doughnut) ---
         const profitabilityBySport = data.reduce((acc, d) => {
-            if (!acc[d.sport]) {
-                acc[d.sport] = { staked: 0, ggr: 0 };
-            }
+            if (!acc[d.sport]) { acc[d.sport] = { staked: 0, ggr: 0 }; }
             acc[d.sport].staked += d.staked;
             acc[d.sport].ggr += d.ggr;
             return acc;
         }, {});
-
         const profitabilityData = Object.entries(profitabilityBySport)
-            .map(([sport, values]) => ({
-                sport,
-                profitability: values.staked > 0 ? values.ggr / values.staked : 0
-            }))
-            .filter(item => item.profitability > 0) // Show only profitable sports
+            .map(([sport, values]) => ({ sport, profitability: values.staked > 0 ? values.ggr / values.staked : 0 }))
+            .filter(item => item.profitability > 0)
             .sort((a, b) => b.profitability - a.profitability).slice(0, 5);
         
         if (rentabilidadeChart) rentabilidadeChart.destroy();
@@ -950,129 +978,43 @@
             data: {
                 labels: profitabilityData.map(d => d.sport),
                 datasets: [{
-                    label: 'Rentabilidade',
-                    data: profitabilityData.map(d => d.profitability),
-                    backgroundColor: [
-                        'rgba(52, 211, 153, 0.8)', // emerald
-                        'rgba(96, 165, 250, 0.8)', // blue
-                        'rgba(251, 191, 36, 0.8)', // amber
-                        'rgba(248, 113, 113, 0.8)', // red
-                        'rgba(168, 85, 247, 0.8)', // purple
-                    ],
-                    borderColor: '#1e293b',
-                    borderWidth: 2,
+                    label: 'Rentabilidade', data: profitabilityData.map(d => d.profitability),
+                    backgroundColor: [ 'rgba(52, 211, 153, 0.8)', 'rgba(96, 165, 250, 0.8)', 'rgba(251, 191, 36, 0.8)', 'rgba(248, 113, 113, 0.8)', 'rgba(168, 85, 247, 0.8)' ],
+                    borderColor: '#1e293b', borderWidth: 2,
                 }]
             },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: chartTextColor, boxWidth: 12, padding: 15 }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed !== null) {
-                                    label += formatPercent(context.parsed);
-                                }
-                                return label;
-                            }
-                        }
-                    }
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: chartTextColor, boxWidth: 12, padding: 15 } }, tooltip: { callbacks: { label: function(context) { let label = context.label || ''; if (label) { label += ': '; } if (context.parsed !== null) { label += formatPercent(context.parsed); } return label; } } } } }
         });
     }
 
-
     // --- Initialization ---
     document.addEventListener('DOMContentLoaded', () => {
-        // Initial setup
-        lucide.createIcons();
-        populateFilters();
-        updateDashboard();
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const enteredPassword = passwordInput.value;
 
-        // Initialize Particles.js
-        particlesJS('particles-js', {
-          "particles": {
-            "number": {
-              "value": 60,
-              "density": {
-                "enable": true,
-                "value_area": 800
-              }
-            },
-            "color": {
-              "value": "#475569"
-            },
-            "shape": {
-              "type": "circle"
-            },
-            "opacity": {
-              "value": 0.5,
-              "random": true
-            },
-            "size": {
-              "value": 3,
-              "random": true
-            },
-            "line_linked": {
-              "enable": true,
-              "distance": 150,
-              "color": "#475569",
-              "opacity": 0.4,
-              "width": 1
-            },
-            "move": {
-              "enable": true,
-              "speed": 2,
-              "direction": "none",
-              "random": false,
-              "straight": false,
-              "out_mode": "out",
-              "bounce": false
-            }
-          },
-          "interactivity": {
-            "detect_on": "canvas",
-            "events": {
-              "onhover": {
-                "enable": true,
-                "mode": "repulse"
-              },
-              "onclick": {
-                "enable": true,
-                "mode": "push"
-              },
-              "resize": true
-            },
-            "modes": {
-              "repulse": {
-                "distance": 100,
-                "duration": 0.4
-              },
-              "push": {
-                "particles_nb": 4
-              }
-            }
-          },
-          "retina_detect": true
-        });
+            // Check if the password is correct
+            if (enteredPassword === '1234') {
+                loginOverlay.style.opacity = '0';
+                dashboardContent.classList.remove('hidden');
+                dashboardContent.classList.add('dashboard-fade-in');
+                document.body.style.overflow = 'auto'; // Restore scrollbar
 
-        // Event Listeners
-        sportFilter.addEventListener('change', updateDashboard);
-        monthFilter.addEventListener('change', updateDashboard);
-        
-        document.querySelector('body').addEventListener('click', function(e) {
-            const button = e.target.closest('.details-btn');
-            if (button) {
-                const key = button.getAttribute('data-key');
-                showDetails(key);
+                // Hide the login screen after the transition
+                setTimeout(() => {
+                    loginOverlay.style.display = 'none';
+                    // Initialize the dashboard only after successful login
+                    initializeDashboard();
+                }, 500); // Match the transition duration
+            } else {
+                errorMessage.textContent = 'Senha incorreta. Tente novamente.';
+                loginBox.classList.add('shake');
+                passwordInput.value = ''; // Clear the input
+
+                // Remove the shake class after the animation ends
+                setTimeout(() => {
+                    loginBox.classList.remove('shake');
+                }, 500);
             }
         });
     });
