@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apresentação: Top Campeonatos por Valor Apostado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a; /* bg-slate-900 */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .card {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.8s ease-out forwards;
+            cursor: pointer;
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            background-color: rgba(30, 41, 59, 0.5); /* bg-slate-800 com alpha */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(51, 65, 85, 0.5); /* border-slate-700 com alpha */
+        }
+        .card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+        }
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .delay-1 { animation-delay: 0.2s; }
+        .delay-2 { animation-delay: 0.4s; }
+        .delay-3 { animation-delay: 0.6s; }
+        .delay-4 { animation-delay: 0.8s; }
+        
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 50; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.8);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .modal-content {
+            background-color: #1e293b; /* bg-slate-800 */
+            padding: 2rem;
+            border: 1px solid #334155; /* border-slate-700 */
+            width: 90%;
+            max-width: 800px;
+            border-radius: 1rem;
+            position: relative;
+            animation: modalFadeIn 0.3s ease-out;
+        }
+        .close-button {
+            color: #94a3b8; /* text-slate-400 */
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-size: 28px;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="text-white p-4 sm:p-6 lg:p-8">
+    <div class="w-full max-w-screen-xl mx-auto">
+        <!-- Cabeçalho -->
+        <header class="text-center mb-10 md:mb-16">
+            <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-2">Análise de Apostas Esportivas</h1>
+            <p class="text-lg md:text-xl text-slate-400">Top Campeonatos por Valor Apostado & GGR</p>
+        </header>
+
+        <!-- Container dos Cards -->
+        <main class="flex flex-col gap-8">
+            <!-- Card Destaques -->
+             <div class="card delay-1 rounded-2xl shadow-lg p-6 flex flex-col h-full" data-sport="geral">
+                <div class="flex items-center mb-5">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-cyan-400 mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2L9 9l-7 1 5 5-1 7 7-4 7 4-1-7 5-5-7-1z"></path></svg>
+                    <h2 class="text-2xl font-semibold text-white">Destaques Gerais</h2>
+                </div>
+                <div class="text-slate-300 space-y-3 flex-grow text-base">
+                    <p><strong>Valor Total Apostado:</strong> <span class="font-bold text-cyan-300">R$ 7.029.560,77</span></p>
+                    <p><strong>Esporte com Maior GGR:</strong> <span class="font-bold text-emerald-300">Futebol (R$ 1.569.480,87)</span></p>
+                    <p class="text-sm text-slate-400 pt-2">Clique aqui para ver o gráfico comparativo entre os esportes.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Card Futebol -->
+                <div class="card delay-2 rounded-2xl shadow-lg p-6 flex flex-col h-full" data-sport="futebol">
+                    <div class="flex items-center mb-5"><svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-emerald-400 mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-2 8c0 1.1.9 2 2 2h.5c.3 0 .5-.2.5-.5v-1c0-.3-.2-.5-.5-.5H10c-1.1 0-2-.9-2-2v-2c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v2c0 1.1-.9 2-2 2h-.5c-.3 0-.5.2-.5.5v1c0 .3.2.5.5.5H14c1.1 0 2 .9 2 2v2c0 1.1-.9 2-2 2h-4c-1.1 0-2-.9-2-2v-2z"></path></svg><h2 class="text-2xl font-semibold text-white">Futebol</h2></div>
+                    <ol class="space-y-4 text-slate-300 flex-grow">
+                        <li class="flex justify-between items-center"><span><span class="font-semibold text-gray-100">Brasil:</span> Série A</span> <span class="text-green-400 text-xs flex items-center">R$ 628.030,18 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></span></li>
+                        <li class="flex justify-between items-center"><span><span class="font-semibold text-gray-100">Mundo:</span> Qual. Copa (AS)</span> <span class="text-green-400 text-xs flex items-center">R$ 600.714,70 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></span></li>
+                        <li class="flex justify-between items-center"><span><span class="font-semibold text-gray-100">Mundo:</span> Qual. Copa (EU)</span> <span class="text-green-400 text-xs flex items-center">R$ 132.461,38 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></span></li>
+                        <li class="flex justify-between items-center"><span><span class="font-semibold text-gray-100">Brasil:</span> Série B</span> <span class="text-green-400 text-xs flex items-center">R$ 80.153,12 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></span></li>
+                        <li class="flex justify-between items-center"><span><span class="font-semibold text-gray-100">Europa:</span> Nations League</span> <span class="text-green-400 text-xs flex items-center">R$ 128.121,49 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></span></li>
+                    </ol>
+                </div>
+
+                <!-- Card Basquete -->
+                 <div class="card delay-3 rounded-2xl shadow-lg p-6 flex flex-col h-full" data-sport="basquete">
+                    <div class="flex items-center mb-5"><svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-orange-400 mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a4 4 0 0 0-4 4h8a4 4 0 0 0-4-4z"></path><path d="M12 22a4 4 0 0 0 4-4h-8a4 4 0 0 0 4 4z"></path><path d="M2 12a4 4 0 0 0 4 4v-8a4 4 0 0 0-4 4z"></path><path d="M22 12a4 4 0 0 0-4-4v8a4 4 0 0 0 4-4z"></path></svg><h2 class="text-2xl font-semibold text-white">Basquete</h2></div>
+                    <ol class="space-y-4 text-slate-300 flex-grow">
+                         <li class="flex justify-between items-center"><span><span class="font-semibold text-gray-100">América do Norte:</span> NBA</span> <span class="text-green-400 text-xs flex items-center">R$ 49.016,78 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></span></li>
+                         <li class="flex justify-between items-center"><span><span class="font-semibold text-gray-100">Espanha:</span> Liga ACB</span> <span class="text-green-400 text-xs flex items-center">R$ 14.235,60 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></span></li>
+                         <li class="flex justify-between items-center"><span><span class="font-semibold text-gray-100">França:</span> Pro A</span> <span class="text-green-400 text-xs flex items-center">R$ 5.844,49 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></span></li>
+                         <li class="flex justify-between items-center"><span><span class="font-semibold text-gray-100">China:</span> National Games</span> <span class="text-red-400 text-xs flex items-center">- R$ 2.578,81 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></span></li>
+                         <li class="flex justify-between items-center"><span><span class="font-semibold text-gray-100">Alemanha:</span> BBL</span> <span class="text-green-400 text-xs flex items-center">R$ 5.201,30 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></span></li>
+                    </ol>
+                </div>
+
+                <!-- Card Tênis -->
+                <div class="card delay-4 rounded-2xl shadow-lg p-6 flex flex-col h-full" data-sport="tenis">
+                    <div class="flex items-center mb-5"><svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-400 mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.48 5.52a8.5 8.5 0 01-1.2 12.02M4.52 18.48a8.5 8.5 0 0112.02-12.02"></path><circle cx="12" cy="12" r="3.5"></circle></svg><h2 class="text-2xl font-semibold text-white">Tênis</h2></div>
+                    <ol class="space-y-4 text-slate-300 flex-grow">
+                        <li class="flex justify-between items-center"><span><span class="font-semibold text-gray-100">França:</span> French Open (M)</span> <span class="text-green-400 text-xs flex items-center">R$ 10.834,66 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></span></li>
+                        <li class="flex justify-between items-center"><span><span class="font-semibold text-gray-100">França:</span> French Open (F)</span> <span class="text-green-400 text-xs flex items-center">R$ 6.224,98 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></span></li>
+                        <li class="flex justify-between items-center"><span><span class="font-semibold text-gray-100">Holanda:</span> ATP Hertogenbosch</span> <span class="text-red-400 text-xs flex items-center">- R$ 6.151,94 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></span></li>
+                        <li class="flex justify-between items-center"><span><span class="font-semibold text-gray-100">Alemanha:</span> ATP Stuttgart</span> <span class="text-green-400 text-xs flex items-center">R$ 2.994,40 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></span></li>
+                        <li class="flex justify-between items-center"><span><span class="font-semibold text-gray-100">Alemanha:</span> ATP Heilbronn</span> <span class="text-green-400 text-xs flex items-center">R$ 1.163,71 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></span></li>
+                    </ol>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal para o Gráfico -->
+    <div id="chartModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3 id="chartTitle" class="text-2xl font-bold text-center mb-6"></h3>
+            <div class="relative h-96 w-full">
+                <canvas id="sportsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = 'Inter, sans-serif';
+
+        const sportsData = {
+            geral: {
+                title: 'Comparativo Geral por Esporte',
+                labels: ['Futebol', 'Tênis', 'Basquete'],
+                datasets: [{
+                    label: 'Valor Total Apostado',
+                    data: [6002412.39, 684144.30, 343004.08],
+                    backgroundColor: 'rgba(56, 189, 248, 0.7)',
+                    borderColor: 'rgba(56, 189, 248, 1)',
+                    borderWidth: 2
+                }, {
+                    label: 'GGR Total',
+                    data: [1569480.87, 15065.81, 71719.36],
+                    backgroundColor: 'rgba(74, 222, 128, 0.7)',
+                    borderColor: 'rgba(74, 222, 128, 1)',
+                    borderWidth: 2
+                }]
+            },
+            futebol: {
+                title: 'Futebol: Valor Apostado vs GGR',
+                labels: ['Série A', 'Qual. Copa (AS)', 'Qual. Copa (EU)', 'Série B', 'Nations League'],
+                datasets: [{ label: 'Valor Apostado', data: [1556413.99, 1460133.76, 1041173.80, 1009863.54, 934827.30], backgroundColor: 'rgba(16, 185, 129, 0.7)', borderColor: 'rgba(16, 185, 129, 1)', borderWidth: 2 }, { label: 'GGR', data: [628030.18, 600714.70, 132461.38, 80153.12, 128121.49], backgroundColor: 'rgba(74, 222, 128, 0.7)', borderColor: 'rgba(74, 222, 128, 1)', borderWidth: 2 }]
+            },
+            basquete: {
+                title: 'Basquete: Valor Apostado vs GGR',
+                labels: ['NBA', 'Liga ACB', 'Pro A', 'National Games', 'BBL'],
+                datasets: [{ label: 'Valor Apostado', data: [119456.65, 96079.32, 44151.29, 42870.76, 40446.06], backgroundColor: 'rgba(249, 115, 22, 0.7)', borderColor: 'rgba(249, 115, 22, 1)', borderWidth: 2 }, { label: 'GGR', data: [49016.78, 14235.60, 5844.49, -2578.81, 5201.30], backgroundColor: 'rgba(251, 146, 60, 0.7)', borderColor: 'rgba(251, 146, 60, 1)', borderWidth: 2 }]
+            },
+            tenis: {
+                title: 'Tênis: Valor Apostado vs GGR',
+                labels: ['French Open (M)', 'French Open (F)', 'ATP Hertogenbosch', 'ATP Stuttgart', 'ATP Heilbronn'],
+                datasets: [{ label: 'Valor Apostado', data: [328157.84, 155370.93, 83492.23, 71973.31, 45149.99], backgroundColor: 'rgba(234, 179, 8, 0.7)', borderColor: 'rgba(234, 179, 8, 1)', borderWidth: 2 }, { label: 'GGR', data: [10834.66, 6224.98, -6151.94, 2994.40, 1163.71], backgroundColor: 'rgba(252, 211, 77, 0.7)', borderColor: 'rgba(252, 211, 77, 1)', borderWidth: 2 }]
+            }
+        };
+
+        const modal = document.getElementById('chartModal');
+        const chartTitle = document.getElementById('chartTitle');
+        const closeModalButton = document.querySelector('.close-button');
+        const sportCards = document.querySelectorAll('.card');
+        const ctx = document.getElementById('sportsChart').getContext('2d');
+        let myChart = null;
+
+        sportCards.forEach(card => {
+            card.addEventListener('click', function () {
+                const sport = this.dataset.sport;
+                const chartData = sportsData[sport];
+                
+                chartTitle.textContent = chartData.title;
+
+                if (myChart) myChart.destroy();
+                
+                myChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'top' } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: 'rgba(51, 65, 85, 0.5)' } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+
+                modal.classList.add('active');
+            });
+        });
+
+        const closeModal = () => modal.classList.remove('active');
+        closeModalButton.onclick = closeModal;
+        window.onclick = (event) => {
+            if (event.target == modal) closeModal();
+        };
+    });
+</script>
+
+</body>
+</html>
