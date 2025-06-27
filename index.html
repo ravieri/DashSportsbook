@@ -17,6 +17,10 @@
     
     <!-- Particles.js for background animation -->
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -99,14 +103,6 @@
         }
         .summary-card, .dashboard-fade-in { animation: fadeIn 0.5s ease-out forwards; }
         
-        /* Shake animation for wrong password */
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
-            20%, 40%, 60%, 80% { transform: translateX(10px); }
-        }
-        .shake { animation: shake 0.5s ease-in-out; }
-
         /* Welcome Animation */
         #welcome-overlay {
             z-index: 101; /* Ensure it's on top */
@@ -154,7 +150,6 @@
                 transform: translateY(-100px) rotateY(-90deg) scale(0.5);
             }
         }
-
     </style>
 </head>
 <body class="min-h-screen">
@@ -163,20 +158,13 @@
 
     <div id="login-overlay" class="overlay">
         <div id="login-box" class="card p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
-            <h2 class="text-2xl font-bold text-white mb-2">Acesso Restrito</h2>
-            <p class="text-slate-400 mb-6">Por favor, insira suas credenciais.</p>
-            <form id="login-form">
-                 <div class="mb-4 text-left">
-                    <label for="email-input" class="block text-sm font-medium text-slate-300 mb-1">Email</label>
-                    <input type="email" id="email-input" class="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 focus:ring-blue-500 focus:border-blue-500" required>
-                </div>
-                <div class="mb-6 text-left">
-                     <label for="password-input" class="block text-sm font-medium text-slate-300 mb-1">Senha</label>
-                    <input type="password" id="password-input" class="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 focus:ring-blue-500 focus:border-blue-500" required>
-                </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105">Entrar</button>
-                <p id="error-message" class="text-red-400 mt-4 h-5"></p>
-            </form>
+            <h2 class="text-2xl font-bold text-white mb-2">Acesso ao Dashboard</h2>
+            <p class="text-slate-400 mb-6">Utilize sua conta Google para continuar.</p>
+            <button id="login-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-3">
+                <svg class="w-6 h-6" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C42.022,35.244,44,30.034,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path></svg>
+                Entrar com Google
+            </button>
+            <p id="error-message" class="text-red-400 mt-4 h-5"></p>
         </div>
     </div>
     
@@ -295,69 +283,23 @@
     </div>
 
 <script>
-    // --- USER DATABASE ---
-    const allowedUsers = [
-        { email: "raul.bispo@h2grupo.com", password: "Raul-bispo1", name: "Mestre" },
-        { email: "luana.silva@h2grupo.com", password: "Luanasilva123", name: "Luana" },
-        { email: "diego.macedo@h2grupo.com", password: "Diego123", name: "Kbsa" },
-        { email: "miguel.leao@h2grupo.com", password: "Leugim2709", name: "Miguel" },
-        { email: "filipe.papini@h2grupo.com", password: "didinoh2", name: "Didi" },
-        { email: "rafaela.perticarrari@h2grupo.com", password: "NaoMeTocaEJoga", name: "Rafa" },
-        { email: "yama@h2grupo.com", password: "NaoMeTocaEJoga", name: "Yama" },
-        { email: "luis.nogueira@h2grupo.com", password: "intel246", name: "Nogueira" },
-        { email: "vitoria.santos@h2grupo.com", password: "@Natalia99", name: "Vitória" },
-        { email: "julio.santos@h2grupo.com", password: "Julio123456789?!?!", name: "Sr. Julio" }
-    ];
+    // --- FIREBASE CONFIGURATION ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyAtK2JJvlNhkMd8gmhLMq8lX-YbVK4nNaI",
+      authDomain: "dashboardsportsbook.firebaseapp.com",
+      projectId: "dashboardsportsbook",
+      storageBucket: "dashboardsportsbook.appspot.com",
+      messagingSenderId: "120547442570",
+      appId: "1:120547442570:web:92cee7952c88c5c0fe5273",
+      measurementId: "G-R9YD9V9583"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const googleProvider = new firebase.auth.GoogleAuthProvider();
 
     // --- DATA ---
-    const rawData = [
-        {sport: "FUTEBOL", month: "Janeiro", bets: 4063043, staked: 30110985.64, ggr: 2784811.65, profitability: 0.0925},
-        {sport: "FUTEBOL", month: "Fevereiro", bets: 4543249, staked: 33508385.83, ggr: 4031238.65, profitability: 0.1203},
-        {sport: "FUTEBOL", month: "Março", bets: 4355145, staked: 31714319.84, ggr: 2390483.96, profitability: 0.0754},
-        {sport: "FUTEBOL", month: "ABRIL", bets: 5154259, staked: 36583352.95, ggr: 5875791.73, profitability: 0.1606},
-        {sport: "FUTEBOL", month: "Maio", bets: 4727833, staked: 33410386.15, ggr: 3438728.78, profitability: 0.1029},
-        {sport: "BASQUETE", month: "Janeiro", bets: 176162, staked: 5650222.76, ggr: 427920.85, profitability: 0.0757},
-        {sport: "BASQUETE", month: "Fevereiro", bets: 94207, staked: 3169406.16, ggr: 155934.72, profitability: 0.0492},
-        {sport: "BASQUETE", month: "Março", bets: 128216, staked: 3657873.71, ggr: 165295.28, profitability: 0.0452},
-        {sport: "BASQUETE", month: "ABRIL", bets: 68916, staked: 2145454.73, ggr: 136926.97, profitability: 0.0638},
-        {sport: "BASQUETE", month: "Maio", bets: 37353, staked: 1785849.31, ggr: 119279.81, profitability: 0.0668},
-        {sport: "TÊNIS", month: "Janeiro", bets: 33282, staked: 2432296.02, ggr: 64566.0, profitability: 0.0265},
-        {sport: "TÊNIS", month: "Fevereiro", bets: 14754, staked: 1115507.25, ggr: 124838.0, profitability: 0.1119},
-        {sport: "TÊNIS", month: "Março", bets: 3110, staked: 204212.78, ggr: 45787.0, profitability: 0.2242},
-        {sport: "TÊNIS", month: "Abril", bets: 22134, staked: 1045259.58, ggr: 95536.06, profitability: 0.0914},
-        {sport: "TÊNIS", month: "Maio", bets: 47259, staked: 2712985.6, ggr: 340916.32, profitability: 0.1257},
-        {sport: "TÊNIS DE MESA", month: "Janeiro", bets: 33883, staked: 91950.07, ggr: 8104.00, profitability: 0.0881},
-        {sport: "TÊNIS DE MESA", month: "Fevereiro", bets: 27654, staked: 66442.97, ggr: 6447.00, profitability: 0.0970},
-        {sport: "TÊNIS DE MESA", month: "Março", bets: 26201, staked: 73713.61, ggr: 5868.00, profitability: 0.0796},
-        {sport: "TÊNIS DE MESA", month: "ABRIL", bets: 22370, staked: 76099.54, ggr: 4584.00, profitability: 0.0602},
-        {sport: "TÊNIS DE MESA", month: "Maio", bets: 27350, staked: 102994.21, ggr: 9946.00, profitability: 0.0966},
-        {sport: "VÔLEI", month: "Janeiro", bets: 19357, staked: 950476.41, ggr: 71394.00, profitability: 0.0751},
-        {sport: "VÔLEI", month: "Fevereiro", bets: 17158, staked: 930326.95, ggr: 31829.00, profitability: 0.0342},
-        {sport: "VÔLEI", month: "Março", bets: 19059, staked: 1300501.34, ggr: 120887.00, profitability: 0.0930},
-        {sport: "VÔLEI", month: "ABRIL", bets: 22370, staked: 76099.54, ggr: 4584.00, profitability: 0.0602},
-        {sport: "VÔLEI", month: "Maio", bets: 13128, staked: 900613.58, ggr: 41148.00, profitability: 0.0457},
-        {sport: "MMA", month: "Janeiro", bets: 4557, staked: 123177.61, ggr: 41678.00, profitability: 0.3383},
-        {sport: "MMA", month: "Fevereiro", bets: 5076, staked: 93557.71, ggr: 15996.00, profitability: 0.1710},
-        {sport: "MMA", month: "Março", bets: 7751, staked: 125356.84, ggr: 63321.00, profitability: 0.5051},
-        {sport: "MMA", month: "ABRIL", bets: 5298, staked: 61889.06, ggr: -1650.00, profitability: -0.0267},
-        {sport: "MMA", month: "Maio", bets: 4956, staked: 65503.93, ggr: 7891.00, profitability: 0.1205},
-        {sport: "F1", month: "Janeiro", bets: 10, staked: 29.83, ggr: 30.00, profitability: 1.0},
-        {sport: "F1", month: "Fevereiro", bets: 14, staked: 33.95, ggr: -1.00, profitability: -0.0295},
-        {sport: "F1", month: "Março", bets: 287, staked: 11823.58, ggr: 4402.00, profitability: 0.3723},
-        {sport: "F1", month: "ABRIL", bets: 422, staked: 12541.58, ggr: -13614.90, profitability: -1.0856},
-        {sport: "BOXE", month: "Janeiro", bets: 202, staked: 2250.12, ggr: -1077.00, profitability: -0.4786},
-        {sport: "BOXE", month: "Fevereiro", bets: 225, staked: 6435.45, ggr: -2520.00, profitability: -0.3916},
-        {sport: "BOXE", month: "Março", bets: 274, staked: 3393.84, ggr: -1317.00, profitability: -0.3881},
-        {sport: "BOXE", month: "ABRIL", bets: 130, staked: 568.33, ggr: -64.00, profitability: -0.1126},
-        {sport: "BOXE", month: "Maio", bets: 636, staked: 829.20, ggr: 125.00, profitability: 0.1507},
-        {sport: "FUTSAL", month: "Janeiro", bets: 870, staked: 164835.31, ggr: 14268.00, profitability: 0.0866},
-        {sport: "FUTSAL", month: "Fevereiro", bets: 323, staked: 24464.74, ggr: 9271.00, profitability: 0.3789},
-        {sport: "FUTSAL", month: "Março", bets: 905, staked: 85564.31, ggr: 8791.00, profitability: 0.1027},
-        {sport: "FUTSAL", month: "ABRIL", bets: 821, staked: 100425.93, ggr: -28955.00, profitability: -0.2883},
-        {sport: "FUTSAL", month: "Maio", bets: 1542, staked: 125100.66, ggr: -171.00, profitability: -0.0014},
-    ].map(item => ({...item, month: item.month.charAt(0).toUpperCase() + item.month.slice(1).toLowerCase()}));
-
-    // --- DATA SOURCES CONFIGURATION ---
     const sportDataSources = {
         'FUTEBOL': {
             competitions: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vReumqXsNHjyHq2yY0keZPqETky4rL5mURt5dE7N8DndBqBuOpLklSvm0mRZumeFCRY7Pn3QLpzWC8g/pub?gid=2137943947&single=true&output=csv',
@@ -375,16 +317,30 @@
             competitions: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vReumqXsNHjyHq2yY0keZPqETky4rL5mURt5dE7N8DndBqBuOpLklSvm0mRZumeFCRY7Pn3QLpzWC8g/pub?gid=1674811684&single=true&output=csv',
             matches: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vReumqXsNHjyHq2yY0keZPqETky4rL5mURt5dE7N8DndBqBuOpLklSvm0mRZumeFCRY7Pn3QLpzWC8g/pub?gid=1180891676&single=true&output=csv'
         },
-
+        'VÔLEI': {
+            competitions: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vReumqXsNHjyHq2yY0keZPqETky4rL5mURt5dE7N8DndBqBuOpLklSvm0mRZumeFCRY7Pn3QLpzWC8g/pub?gid=1796052994&single=true&output=csv',
+            matches: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vReumqXsNHjyHq2yY0keZPqETky4rL5mURt5dE7N8DndBqBuOpLklSvm0mRZumeFCRY7Pn3QLpzWC8g/pub?gid=1638998771&single=true&output=csv'
+        },
+        'FUTSAL': {
+            competitions: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vReumqXsNHjyHq2yY0keZPqETky4rL5mURt5dE7N8DndBqBuOpLklSvm0mRZumeFCRY7Pn3QLpzWC8g/pub?gid=726287054&single=true&output=csv',
+            matches: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vReumqXsNHjyHq2yY0keZPqETky4rL5mURt5dE7N8DndBqBuOpLklSvm0mRZumeFCRY7Pn3QLpzWC8g/pub?gid=751239518&single=true&output=csv'
+        },
+        'MMA': {
+            competitions: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vReumqXsNHjyHq2yY0keZPqETky4rL5mURt5dE7N8DndBqBuOpLklSvm0mRZumeFCRY7Pn3QLpzWC8g/pub?gid=800906225&single=true&output=csv',
+            matches: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vReumqXsNHjyHq2yY0keZPqETky4rL5mURt5dE7N8DndBqBuOpLklSvm0mRZumeFCRY7Pn3QLpzWC8g/pub?gid=973042076&single=true&output=csv'
+        },
+        'BOXE': {
+            competitions: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vReumqXsNHjyHq2yY0keZPqETky4rL5mURt5dE7N8DndBqBuOpLklSvm0mRZumeFCRY7Pn3QLpzWC8g/pub?gid=1864838189&single=true&output=csv',
+            matches: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vReumqXsNHjyHq2yY0keZPqETky4rL5mURt5dE7N8DndBqBuOpLklSvm0mRZumeFCRY7Pn3QLpzWC8g/pub?gid=491931611&single=true&output=csv'
+        }
     };
 
+    let rawData = [];
     let detailedData = {};
-    // State variables
     let currentSort = { key: 'staked', order: 'desc' };
     let championshipsSort = { key: 'staked', order: 'desc' };
     let matchesSort = { key: 'staked', order: 'desc' };
     let currentDetailKey = null;
-    let currentUser = null;
 
     // --- DOM Elements ---
     const sportFilter = document.getElementById('sport-filter');
@@ -403,13 +359,10 @@
     const partidasTitle = document.getElementById('partidas-title');
     const championshipSearch = document.getElementById('championship-search');
     const matchSearch = document.getElementById('match-search');
-    const loginForm = document.getElementById('login-form');
     const loginOverlay = document.getElementById('login-overlay');
+    const loginBtn = document.getElementById('login-btn');
     const dashboardContent = document.getElementById('dashboard-content');
-    const passwordInput = document.getElementById('password-input');
-    const emailInput = document.getElementById('email-input');
     const errorMessage = document.getElementById('error-message');
-    const loginBox = document.getElementById('login-box');
     const welcomeOverlay = document.getElementById('welcome-overlay');
     const welcomeText = document.getElementById('welcome-text');
     const userDisplay = document.getElementById('user-display');
@@ -422,7 +375,7 @@
     const formatNumber = (value) => new Intl.NumberFormat('pt-BR').format(value);
     const formatPercent = (value) => new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 2 }).format(value);
 
-    // --- Google Sheets Integration ---
+    // --- Data Processing Functions ---
     async function parseCSV(url) {
         try {
             const response = await fetch(url);
@@ -430,76 +383,151 @@
             const csvText = await response.text();
             const lines = csvText.trim().split(/\r\n|\n/);
             if (lines.length < 2) return [];
+
+            const delimiter = lines[0].includes('\t') ? '\t' : (lines[0].includes(';') ? ';' : ',');
+            const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase());
+
+            const findIndex = (possibleNames) => {
+                for (const name of possibleNames) {
+                    const index = headers.indexOf(name.toLowerCase());
+                    if (index !== -1) return index;
+                }
+                return -1;
+            };
+
+            const chaveIndex = findIndex(['chave_detalhe']);
+            const paisIndex = findIndex(['pais']);
+            const competicaoIndex = findIndex(['competicao', 'competição', 'campeonato']);
+            const partidaIndex = findIndex(['partida']);
+            const betsIndex = findIndex(['quantidade apostas', 'bets']);
+            const stakedIndex = findIndex(['valor apostado', 'staked']);
+            const ggrIndex = findIndex(['ggr']);
             
-            const delimiter = lines[0].includes(';') ? ';' : ',';
-            const headers = lines[0].split(delimiter).map(h => h.trim());
-            
-            const numericHeaders = ['bets', 'staked', 'ggr'];
+            const isCompetitionSheet = competicaoIndex !== -1;
+            const mainDescIndex = isCompetitionSheet ? competicaoIndex : partidaIndex;
+            const mainDescKey = isCompetitionSheet ? 'competicao' : 'partida';
+
+            if (chaveIndex === -1 || mainDescIndex === -1) {
+                 console.error(`Missing required columns 'chave_detalhe' or 'competicao'/'partida' in CSV from ${url}`);
+                 return [];
+            }
 
             return lines.slice(1).map(line => {
                 const values = line.split(delimiter);
-                let row = {};
-                headers.forEach((header, index) => {
-                    const rawValue = values[index] ? values[index].trim() : '';
-                    if (numericHeaders.includes(header)) {
-                        const cleanedValue = rawValue.replace(/"/g, '').replace(/,/g, '');
-                        row[header] = parseFloat(cleanedValue) || 0;
-                    } else {
-                        row[header] = rawValue;
-                    }
-                });
+                const row = {};
+
+                const parseValue = (index) => (index !== -1 && values[index]) ? values[index].trim() : '';
+                
+                const parseNumeric = (index) => {
+                     if (index === -1) return 0;
+                     const raw = parseValue(index);
+                     const cleaned = raw.replace(/"/g, '').replace(/[R$\s]/g, '');
+                     if (cleaned.includes(',') && cleaned.includes('.')) {
+                        return parseFloat(cleaned.replace(/\./g, '').replace(',', '.')) || 0;
+                     }
+                      if (cleaned.includes(',')) {
+                        return parseFloat(cleaned.replace(',', '.')) || 0;
+                     }
+                     return parseFloat(cleaned) || 0;
+                };
+
+                row.chave_detalhe = parseValue(chaveIndex);
+                row.pais = parseValue(paisIndex);
+                row[mainDescKey] = parseValue(mainDescIndex);
+                row.bets = parseNumeric(betsIndex);
+                row.staked = parseNumeric(stakedIndex);
+                row.ggr = parseNumeric(ggrIndex);
+                
+                row.profitability = row.staked > 0 ? row.ggr / row.staked : 0;
+                
                 return row;
             });
+
         } catch (error) {
             console.error("Error fetching or parsing CSV from URL:", url, error);
             return [];
         }
     }
 
-    async function fetchDetailedData() {
+    function aggregateRawData(detailedData) {
+        const aggregated = {};
+        const knownSports = ['FUTEBOL', 'BASQUETE', 'TÊNIS DE MESA', 'TÊNIS', 'VÔLEI', 'MMA', 'F1', 'BOXE', 'FUTSAL'];
+
+        for (const key in detailedData) {
+            const data = detailedData[key];
+            if (!data.partidas || data.partidas.length === 0) continue; 
+
+            let sport = '';
+            let month = '';
+            
+            for (const s of knownSports) {
+                const s_key = s.replace(/[\s-]/g, '');
+                if (key.toUpperCase().startsWith(s_key)) {
+                    sport = s;
+                    month = key.substring(s_key.length);
+                    break;
+                }
+            }
+
+            if (!sport || !month) continue;
+
+             const totals = data.partidas.reduce((acc, item) => {
+                acc.bets += item.bets || 0;
+                acc.staked += item.staked || 0;
+                acc.ggr += item.ggr || 0;
+                return acc;
+            }, { bets: 0, staked: 0, ggr: 0 });
+
+            const aKey = `${sport}-${month}`;
+            if (!aggregated[aKey]) {
+                 aggregated[aKey] = { sport, month, bets: 0, staked: 0, ggr: 0 };
+            }
+            
+            aggregated[aKey].bets += totals.bets;
+            aggregated[aKey].staked += totals.staked;
+            aggregated[aKey].ggr += totals.ggr;
+        }
+
+        return Object.values(aggregated).map(item => ({
+            ...item,
+            profitability: item.staked > 0 ? item.ggr / item.staked : 0
+        }));
+    }
+
+    async function fetchAndProcessData() {
         const allPromises = [];
         for (const sport in sportDataSources) {
             const urls = sportDataSources[sport];
-            allPromises.push(parseCSV(urls.competitions));
-            allPromises.push(parseCSV(urls.matches));
+            allPromises.push(parseCSV(urls.competitions).then(data => ({ type: 'competitions', data })));
+            allPromises.push(parseCSV(urls.matches).then(data => ({ type: 'matches', data })));
         }
 
         const allData = await Promise.all(allPromises);
         const groupedData = {};
 
-        for (let i = 0; i < allData.length; i += 2) {
-            const competitions = allData[i];
-            const matches = allData[i + 1];
-
-            competitions.forEach(item => {
-                const key = item.chave_detalhe.replace(/-/g, '');
+        allData.forEach(result => {
+            result.data.forEach(item => {
+                const key = item.chave_detalhe.replace(/[-\s]/g, '');
                 if (!key) return;
                 if (!groupedData[key]) {
                     groupedData[key] = { campeonatos: [], partidas: [] };
                 }
+                
                 delete item.chave_detalhe;
-                groupedData[key].campeonatos.push(item);
-            });
-
-            matches.forEach(item => {
-                const key = item.chave_detalhe.replace(/-/g, '');
-                if (!key) return;
-                if (!groupedData[key]) {
-                    groupedData[key] = { campeonatos: [], partidas: [] };
+                if (result.type === 'competitions' || 'competicao' in item) {
+                    groupedData[key].campeonatos.push(item);
+                } else {
+                    groupedData[key].partidas.push(item);
                 }
-                delete item.chave_detalhe;
-                groupedData[key].partidas.push(item);
             });
-        }
+        });
         
-        return groupedData;
+        detailedData = groupedData;
+        rawData = aggregateRawData(detailedData);
     }
-
-
+    
     // --- Core Functions ---
     async function initializeDashboard() {
-        detailedData = await fetchDetailedData();
-        
         lucide.createIcons();
         populateFilters();
         updateDashboard();
@@ -562,7 +590,7 @@
 
     function populateFilters() {
         const sports = [...new Set(rawData.map(d => d.sport))];
-        const months = [...new Set(rawData.map(d => d.month))];
+        const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio"];
 
         sports.sort().forEach(sport => {
             const option = document.createElement('option');
@@ -571,8 +599,7 @@
             sportFilter.appendChild(option);
         });
 
-        const monthOrder = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio"];
-        months.sort((a, b) => monthOrder.indexOf(a) - monthOrder.indexOf(b)).forEach(month => {
+        months.forEach(month => {
             const option = document.createElement('option');
             option.value = month;
             option.textContent = month;
@@ -616,8 +643,8 @@
             let valA, valB;
 
             if (currentSort.key === 'profitability') {
-                valA = a.staked > 0 ? a.ggr / a.staked : -Infinity;
-                valB = b.staked > 0 ? b.ggr / b.staked : -Infinity;
+                valA = a.profitability;
+                valB = b.profitability;
             } else {
                 valA = a[currentSort.key];
                 valB = b[currentSort.key];
@@ -636,12 +663,11 @@
             const row = document.createElement('tr');
             row.className = 'border-b border-slate-700 hover:bg-slate-700/70 transition-colors duration-200';
             
-            const rowProfitability = d.staked > 0 ? d.ggr / d.staked : 0;
-            const profitabilityColor = rowProfitability < 0 ? 'text-red-400' : 'text-green-400';
-            const detailKey = `${d.sport.toUpperCase()}${d.month}`;
+            const profitabilityColor = d.profitability < 0 ? 'text-red-400' : 'text-green-400';
+            const detailKey = `${d.sport.toUpperCase()}${d.month}`.replace(/[-\s]/g, '');
             
             let actionCell = `<td class="px-6 py-4 text-center w-32"></td>`;
-            if (detailedData[detailKey]) {
+            if (detailedData[detailKey] && (detailedData[detailKey].campeonatos.length > 0 || detailedData[detailKey].partidas.length > 0)) {
                 actionCell = `<td class="px-6 py-4 text-center w-32">
                     <button data-key="${detailKey}" class="details-btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2">
                         <i data-lucide="eye" class="w-4 h-4"></i> Detalhes
@@ -655,7 +681,7 @@
                 <td class="px-6 py-4 text-right">${formatNumber(d.bets)}</td>
                 <td class="px-6 py-4 text-right">${formatCurrency(d.staked)}</td>
                 <td class="px-6 py-4 text-right ${profitabilityColor}">${formatCurrency(d.ggr)}</td>
-                <td class="px-6 py-4 text-right font-bold ${profitabilityColor}">${formatPercent(rowProfitability)}</td>
+                <td class="px-6 py-4 text-right font-bold ${profitabilityColor}">${formatPercent(d.profitability)}</td>
                 ${actionCell}
             `;
             dataTable.appendChild(row);
@@ -696,8 +722,9 @@
             matchSearch.value = '';
         }
 
-        campeonatosTitle.textContent = `Top Campeonatos: ${key.replace(/(FUTEBOL|BASQUETE)/, '$1 - ')}`;
-        partidasTitle.textContent = `Top Partidas: ${key.replace(/(FUTEBOL|BASQUETE)/, '$1 - ')}`;
+        const formattedKey = key.replace(/(FUTEBOL|BASQUETE|TÊNISDE MESA|TÊNIS|VÔLEI|FUTSAL|MMA|BOXE)([A-Z][a-zç]+)/i, '$1 - $2');
+        campeonatosTitle.textContent = `Top Campeonatos: ${formattedKey}`;
+        partidasTitle.textContent = `Top Partidas: ${formattedKey}`;
 
         populateDetailsTable(campeonatosTable, data.campeonatos, 'competicao', championshipsSort, championshipsTableHead, championshipSearch.value);
         populateDetailsTable(partidasTable, data.partidas, 'partida', matchesSort, matchesTableHead, matchSearch.value);
@@ -712,7 +739,7 @@
         tableElement.innerHTML = '';
         
         const filteredData = (!data || data.length === 0) ? [] : data.filter(d => 
-            d[mainColumnName].toLowerCase().includes(searchTerm.toLowerCase())
+            d[mainColumnName] && d[mainColumnName].toLowerCase().includes(searchTerm.toLowerCase())
         );
 
         if(filteredData.length === 0) {
@@ -726,8 +753,8 @@
         dataToSort.sort((a,b) => {
             let valA, valB;
             if (sortConfig.key === 'profitability') {
-                valA = a.staked > 0 ? a.ggr / a.staked : -Infinity;
-                valB = b.staked > 0 ? b.ggr / b.staked : -Infinity;
+                valA = a.profitability;
+                valB = b.profitability;
             } else if (numericSortKeys.includes(sortConfig.key)) {
                 valA = a[sortConfig.key];
                 valB = b[sortConfig.key];
@@ -742,14 +769,13 @@
         dataToSort.forEach(d => {
             const row = document.createElement('tr');
             row.className = 'border-b border-slate-700 hover:bg-slate-700/70 transition-colors duration-200';
-            const profitability = d.staked > 0 ? d.ggr / d.staked : 0;
-            const profitabilityColor = profitability < 0 ? 'text-red-400' : 'text-green-400';
+            const profitabilityColor = d.profitability < 0 ? 'text-red-400' : 'text-green-400';
             row.innerHTML = `
                 <td class="px-6 py-4 font-semibold">${d[mainColumnName]} <span class="text-xs text-slate-400 block">${d.pais}</span></td>
                 <td class="px-6 py-4 text-right">${formatNumber(d.bets)}</td>
                 <td class="px-6 py-4 text-right">${formatCurrency(d.staked)}</td>
                 <td class="px-6 py-4 text-right ${profitabilityColor}">${formatCurrency(d.ggr)}</td>
-                <td class="px-6 py-4 text-right font-bold ${profitabilityColor}">${formatPercent(profitability)}</td>
+                <td class="px-6 py-4 text-right font-bold ${profitabilityColor}">${formatPercent(d.profitability)}</td>
             `;
             tableElement.appendChild(row);
         });
@@ -818,76 +844,80 @@
         });
     }
 
-    // --- Login Logic ---
-    document.addEventListener('DOMContentLoaded', () => {
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const user = allowedUsers.find(u => u.email === emailInput.value && u.password === passwordInput.value);
+    // --- Authentication Logic ---
+    function handleWelcomeAnimation(user) {
+        loginOverlay.style.opacity = '0';
+        setTimeout(() => {
+            loginOverlay.style.display = 'none';
+            welcomeOverlay.classList.remove('hidden');
+            
+            const name = user.displayName.split(' ')[0];
+            const text = `Bem-vindo, ${name}!`;
+            welcomeText.innerHTML = ''; 
+            text.split('').forEach((char, i) => {
+                const span = document.createElement('span');
+                span.textContent = char;
+                if(char === ' ') { span.classList.add('space'); }
+                span.className = 'letter letter-in';
+                span.style.animationDelay = `${i * 0.05}s`;
+                welcomeText.appendChild(span);
+            });
 
-            if (user) {
-                currentUser = user;
-                loginOverlay.style.opacity = '0';
+            setTimeout(() => {
+                document.querySelectorAll('#welcome-text .letter').forEach((span, i) => {
+                   span.classList.remove('letter-in');
+                   span.classList.add('letter-out');
+                   span.style.animationDelay = `${i * 0.03}s`;
+                });
+                
+                welcomeOverlay.style.opacity = '0';
 
-                setTimeout(() => {
-                    loginOverlay.style.display = 'none';
-                    welcomeOverlay.classList.remove('hidden');
-                    
-                    const text = `Bem-vindo, ${user.name}!`;
-                    welcomeText.innerHTML = ''; 
-                    text.split('').forEach((char, i) => {
-                        const span = document.createElement('span');
-                        span.textContent = char;
-                        if(char === ' ') {
-                            span.classList.add('space');
-                        }
-                        span.className = 'letter letter-in';
-                        span.style.animationDelay = `${i * 0.05}s`;
-                        welcomeText.appendChild(span);
-                    });
+                setTimeout(async () => {
+                   welcomeOverlay.style.display = 'none';
+                   welcomeOverlay.style.opacity = '1'; // Reset for next time
+                   dashboardContent.classList.remove('hidden');
+                   dashboardContent.classList.add('dashboard-fade-in');
+                   document.body.style.overflow = 'auto';
+                   await fetchAndProcessData();
+                   initializeDashboard();
+                }, 1000);
 
-                    setTimeout(() => {
-                        document.querySelectorAll('#welcome-text .letter').forEach((span, i) => {
-                           span.classList.remove('letter-in');
-                           span.classList.add('letter-out');
-                           span.style.animationDelay = `${i * 0.03}s`;
-                        });
-                        
-                        welcomeOverlay.style.opacity = '0';
+            }, 2500);
 
-                        setTimeout(() => {
-                           welcomeOverlay.style.display = 'none';
-                           dashboardContent.classList.remove('hidden');
-                           dashboardContent.classList.add('dashboard-fade-in');
-                           userDisplay.textContent = `Logado: ${currentUser.name}`;
-                           document.body.style.overflow = 'auto';
-                           initializeDashboard();
-                        }, 1000);
+        }, 500);
+    }
+    
+    function showLoginScreen() {
+        dashboardContent.classList.add('hidden');
+        loginOverlay.style.display = 'flex';
+        setTimeout(() => {
+            loginOverlay.style.opacity = '1';
+            errorMessage.textContent = '';
+        }, 10);
+        document.body.style.overflow = 'hidden';
+    }
+    
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            userDisplay.textContent = `Logado: ${user.displayName}`;
+            handleWelcomeAnimation(user);
+        } else {
+            showLoginScreen();
+        }
+    });
 
-                    }, 2500);
-
-                }, 500);
-
-            } else {
-                errorMessage.textContent = 'Email ou senha incorreta.';
-                loginBox.classList.add('shake');
-                passwordInput.value = '';
-                setTimeout(() => { loginBox.classList.remove('shake'); }, 500);
-            }
-        });
-
-        logoutBtn.addEventListener('click', () => {
-            currentUser = null;
-            dashboardContent.classList.add('hidden');
-            loginOverlay.style.display = 'flex';
-            setTimeout(() => { // Let the display property take effect before changing opacity
-                loginOverlay.style.opacity = '1';
-                emailInput.value = '';
-                passwordInput.value = '';
-                errorMessage.textContent = '';
-            }, 10);
-            document.body.style.overflow = 'hidden';
+    loginBtn.addEventListener('click', () => {
+        errorMessage.textContent = '';
+        auth.signInWithPopup(googleProvider).catch(error => {
+            console.error("Erro no login com Google:", error);
+            errorMessage.textContent = "Falha no login. Tente novamente.";
         });
     });
+
+    logoutBtn.addEventListener('click', () => {
+        auth.signOut();
+    });
+
 </script>
 
 </body>
